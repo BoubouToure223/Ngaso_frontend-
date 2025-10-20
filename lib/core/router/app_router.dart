@@ -8,6 +8,15 @@ import 'package:myapp/features/auth/screens/profile_choice_page.dart';
 import 'package:myapp/features/auth/screens/pro_signup_page.dart';
 import 'package:myapp/features/onboarding/screens/onboarding_page.dart';
 import 'package:myapp/features/splash/screens/splash_page.dart';
+import 'package:myapp/shared/shell/app_shell.dart';
+import 'package:myapp/features/novice/screens/home_page.dart';
+import 'package:myapp/features/novice/screens/messages_page.dart';
+import 'package:myapp/features/novice/screens/projects_page.dart';
+import 'package:myapp/features/novice/screens/profile_page.dart';
+import 'package:myapp/features/pro/screens/home_page.dart';
+import 'package:myapp/features/pro/screens/messages_page.dart';
+import 'package:myapp/features/pro/screens/projects_page.dart';
+import 'package:myapp/features/pro/screens/profile_page.dart';
 
 /// La configuration du routeur de l'application.
 final GoRouter router = GoRouter(
@@ -60,6 +69,82 @@ final GoRouter router = GoRouter(
       builder: (BuildContext context, GoRouterState state) {
         return const NoviceSignupPage();
       },
+    ),
+    // Espace Novice avec barre de navigation persistante (AppShell paramétré).
+    ShellRoute(
+      builder: (BuildContext context, GoRouterState state, Widget child) {
+        const noviceTabs = [
+          NavTab('/app/home', 'Accueil', Icons.home_outlined),
+          NavTab('/app/messages', 'Messages', Icons.chat_bubble_outline),
+          NavTab('/app/projet', 'Projet', Icons.topic_outlined),
+          NavTab('/app/profil', 'Profile', Icons.person_outline),
+        ];
+        return AppShell(child: child, tabs: noviceTabs);
+      },
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/Novice/home',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceHomePage();
+          },
+        ),
+        GoRoute(
+          path: '/app/messages',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceMessagesPage();
+          },
+        ),
+        GoRoute(
+          path: '/app/projet',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceProjectsPage();
+          },
+        ),
+        GoRoute(
+          path: '/app/profil',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceProfilePage();
+          },
+        ),
+      ],
+    ),
+    // Espace Professionnel avec barre de navigation persistante (AppShell paramétré).
+    ShellRoute(
+      builder: (BuildContext context, GoRouterState state, Widget child) {
+        const proTabs = [
+          NavTab('/pro/home', 'Accueil', Icons.home_outlined),
+          NavTab('/pro/messages', 'Messages', Icons.chat_bubble_outline),
+          NavTab('/pro/projet', 'Projet', Icons.topic_outlined),
+          NavTab('/pro/profil', 'Profile', Icons.person_outline),
+        ];
+        return AppShell(child: child, tabs: proTabs);
+      },
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/pro/home',
+          builder: (BuildContext context, GoRouterState state) {
+            return const ProHomePage();
+          },
+        ),
+        GoRoute(
+          path: '/pro/messages',
+          builder: (BuildContext context, GoRouterState state) {
+            return const ProMessagesPage();
+          },
+        ),
+        GoRoute(
+          path: '/pro/projet',
+          builder: (BuildContext context, GoRouterState state) {
+            return const ProProjectsPage();
+          },
+        ),
+        GoRoute(
+          path: '/pro/profil',
+          builder: (BuildContext context, GoRouterState state) {
+            return const ProProfilePage();
+          },
+        ),
+      ],
     ),
   ],
 );

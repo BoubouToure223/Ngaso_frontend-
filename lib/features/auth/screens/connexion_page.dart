@@ -143,9 +143,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
                               onPressed: () {
                                 // Valide le formulaire avant de continuer.
                                 if (!(_formKey.currentState?.validate() ?? false)) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Connexion… (demo)')),
-                                );
+                                context.go('/Novice/home');
                               },
                               child: const Text('Se connecter'),
                             ),
