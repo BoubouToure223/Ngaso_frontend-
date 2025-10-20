@@ -1,4 +1,6 @@
+
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -23,14 +25,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    const background = Color(0xFFFCFAF7);
-
-    const headingColor = Color(0xFF333333);
-    const bodyColor = Color(0xFF5C5C5C);
-    const primaryColor = Color(0xFF3F51B5);
-
     return Scaffold(
-      backgroundColor: background,
       body: SafeArea(
         child: Column(
           children: [
@@ -41,8 +36,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 alignment: Alignment.centerLeft,
                 child: IconButton(
                   icon: const Icon(Icons.arrow_back),
-                  color: const Color(0xFF171212),
-                  onPressed: () => Navigator.of(context).maybePop(),
+                  onPressed: () => context.pop(),
                 ),
               ),
             ),
@@ -64,8 +58,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               child: Container(
                                 width: 48,
                                 height: 48,
-                                decoration: const BoxDecoration(
-                                  color: primaryColor,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Center(
@@ -82,83 +76,56 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                 Text(
                                   'Mot de passe oublier',
                                   textAlign: TextAlign.center,
-                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        color: headingColor,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 20.4,
-                                        height: 32 / 20.4,
-                                      ),
+                                  style: Theme.of(context).textTheme.titleLarge,
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   'Vous avez oublier votre mot de passe ?',
                                   textAlign: TextAlign.center,
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: bodyColor,
-                                        fontSize: 13.6,
-                                        height: 24 / 13.6,
-                                      ),
+                                  style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                                 const SizedBox(height: 1),
                                 Text(
                                   'Changer le en toute tranquilité',
                                   textAlign: TextAlign.center,
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: bodyColor,
-                                        fontSize: 13.6,
-                                        height: 24 / 13.6,
-                                      ),
+                                  style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                               ],
                             ),
                           ),
                           const SizedBox(height: 24),
-                          _FilledTextField(
+                          TextFormField(
                             controller: _emailController,
-                            label: 'Entrez votre email',
                             keyboardType: TextInputType.emailAddress,
                             validator: (v) {
                               if (v == null || v.isEmpty) return 'Entrez votre email';
-                              if (!RegExp(r'^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$').hasMatch(v)) return 'Email invalide';
+                              if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)) return 'Email invalide';
                               return null;
                             },
-                            topMargin: 24,
+                            decoration: const InputDecoration(labelText: 'Entrez votre email'),
                           ),
                           const SizedBox(height: 16),
-                          Opacity(
-                            opacity: 0.7,
-                            child: _FilledTextField(
-                              controller: _newPasswordController,
-                              label: 'Entrez le nouveau mot de passe',
-                              obscureText: true,
-                              validator: (v) => v == null || v.isEmpty ? 'Entrez le nouveau mot de passe' : null,
-                              topMargin: 24,
-                            ),
+                          TextFormField(
+                            controller: _newPasswordController,
+                            obscureText: true,
+                            validator: (v) => v == null || v.isEmpty ? 'Entrez le nouveau mot de passe' : null,
+                            decoration: const InputDecoration(labelText: 'Entrez le nouveau mot de passe'),
                           ),
                           const SizedBox(height: 16),
-                          Opacity(
-                            opacity: 0.7,
-                            child: _FilledTextField(
-                              controller: _confirmPasswordController,
-                              label: 'Confirmez le mot de passe',
-                              obscureText: true,
-                              validator: (v) {
-                                if (v == null || v.isEmpty) return 'Confirmez le mot de passe';
-                                if (v != _newPasswordController.text) return 'Les mots de passe ne correspondent pas';
-                                return null;
-                              },
-                              topMargin: 24,
-                            ),
+                          TextFormField(
+                            controller: _confirmPasswordController,
+                            obscureText: true,
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return 'Confirmez le mot de passe';
+                              if (v != _newPasswordController.text) return 'Les mots de passe ne correspondent pas';
+                              return null;
+                            },
+                            decoration: const InputDecoration(labelText: 'Confirmez le mot de passe'),
                           ),
                           const SizedBox(height: 41),
                           SizedBox(
                             height: 48,
                             child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryColor,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
                               onPressed: () {
                                 if (!(_formKey.currentState?.validate() ?? false)) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -167,7 +134,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               },
                               child: const Text(
                                 'Confirmer',
-                                style: TextStyle(fontSize: 13.6, fontWeight: FontWeight.w500),
                               ),
                             ),
                           ),
@@ -180,54 +146,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FilledTextField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final bool obscureText;
-  final TextInputType? keyboardType;
-  final String? Function(String?)? validator;
-  final double topMargin;
-
-  const _FilledTextField({
-    super.key,
-    required this.controller,
-    required this.label,
-    this.obscureText = false,
-    this.keyboardType,
-    this.validator,
-    this.topMargin = 0,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(top: topMargin),
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        validator: validator,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(color: Color(0xFF000000)),
-          filled: true,
-          fillColor: const Color(0xFFEBEBEB),
-          contentPadding: const EdgeInsets.fromLTRB(17, 13, 17, 13),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
-          ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
         ),
       ),
     );

@@ -1,6 +1,7 @@
+
 import 'package:flutter/material.dart';
-import '../auth/connexion_page.dart';
-import '../auth/profile_choice_page.dart';
+import 'package:go_router/go_router.dart';
+import 'package:myapp/features/onboarding/onboarding_screen.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -17,26 +18,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
     if (_index < 2) {
       _controller.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     } else {
-      Navigator.of(context).pop();
+      context.go('/');
     }
   }
 
   void _skip() {
-    Navigator.of(context).pop();
+    context.go('/');
   }
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF3F51B5); // Boutons principaux (#3F51B5)
-    const Color headingColor = Color(0xFF1F2937); // Titres (#1F2937)
-    const Color bodyColor = Color(0xFF4B5563); // Paragraphes (#4B5563)
-    const Color indicatorActive = Color(0xFF2563EB); // Indicateur actif (#2563EB)
-    const Color indicatorInactive = Color(0xFFE5E7EB); // Indicateur inactif (#E5E7EB)
-    const Color skipColor = Color(0xFF6B7280); // Texte "Passer"
-
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
@@ -45,7 +40,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
             TextButton(
               onPressed: _skip,
               child: const Text('Passer'),
-              style: TextButton.styleFrom(foregroundColor: skipColor),
             ),
         ],
       ),
@@ -63,17 +57,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
               controller: _controller,
               onPageChanged: (i) => setState(() => _index = i),
               children: const [
-                _OnboardingScreen(
+                OnboardingScreen(
                   title: 'Bienvenue sur N’Gaso',
                   subtitle: 'Votre projet de construction\ncommence ici.',
                   imagePath: 'assets/images/onboarding_1.png',
                 ),
-                _OnboardingScreen(
+                OnboardingScreen(
                   title: 'Trouvez les meilleurs partenaires 👷',
                   subtitle: 'Contactez directement des experts\npour concrétiser votre projet.',
                   imagePath: 'assets/images/onboarding_2.png',
                 ),
-                _OnboardingScreen(
+                OnboardingScreen(
                   title: 'Commencez dès aujourd\'hui 🚀',
                   subtitle: 'Créez un compte ou connectez-vous\npour démarrer votre projet.',
                   imagePath: 'assets/images/onboarding_3.png',
@@ -94,7 +88,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   width: selected ? 20 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: selected ? indicatorActive : indicatorInactive,
+                    color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 );
@@ -107,12 +101,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
                   onPressed: _next,
                   child: const Text('Suivant'),
                 ),
@@ -126,16 +114,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ProfileChoicePage()),
-                      ),
+                      onPressed: () => context.go('/profile-choice'),
                       child: const Text('Créer un compte'),
                     ),
                   ),
@@ -143,16 +122,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: headingColor,
-                        side: const BorderSide(color: Color(0xFFD1D5DB)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ConnexionPage()),
-                      ),
+                      onPressed: () => context.go('/connexion'),
                       child: const Text('Se connecter'),
                     ),
                   ),
@@ -162,75 +132,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ],
       ),
     ),
-    );
-  }
-}
-
-class _OnboardingScreen extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final String imagePath;
-  final bool isFinal;
-  const _OnboardingScreen({required this.title, required this.subtitle, required this.imagePath, this.isFinal = false});
-
-  @override
-  Widget build(BuildContext context) {
-    const Color headingColor = Color(0xFF1F2937);
-    const Color bodyColor = Color(0xFF4B5563);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: double.infinity,
-              constraints: const BoxConstraints(maxWidth: 380),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x1A000000),
-                    blurRadius: 40,
-                    spreadRadius: -6,
-                    offset: Offset(0, 22),
-                  ),
-                  BoxShadow(
-                    color: Color(0x0D000000),
-                    blurRadius: 12,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: Image.asset(
-                  imagePath,
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                ),
-              ),
-            ),
-            const SizedBox(height: 28),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: headingColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              subtitle,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: bodyColor, height: 1.4),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
