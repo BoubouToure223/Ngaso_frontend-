@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Page d'inscription pour les utilisateurs "professionnels".
 class ProSignupPage extends StatefulWidget {
   const ProSignupPage({super.key});
 
@@ -8,7 +9,9 @@ class ProSignupPage extends StatefulWidget {
   State<ProSignupPage> createState() => _ProSignupPageState();
 }
 
+/// État de la page d'inscription pour les professionnels.
 class _ProSignupPageState extends State<ProSignupPage> {
+  // Contrôleurs pour les champs du formulaire.
   final TextEditingController _lastNameCtrl = TextEditingController();
   final TextEditingController _firstNameCtrl = TextEditingController();
   final TextEditingController _companyNameCtrl = TextEditingController();
@@ -19,12 +22,14 @@ class _ProSignupPageState extends State<ProSignupPage> {
   final TextEditingController _passwordCtrl = TextEditingController();
   final TextEditingController _confirmPasswordCtrl = TextEditingController();
 
+  // Spécialité sélectionnée et indicateurs pour masquer/afficher les mots de passe.
   String? _specialty;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
 
   @override
   void dispose() {
+    // Libère les ressources des contrôleurs.
     _lastNameCtrl.dispose();
     _firstNameCtrl.dispose();
     _companyNameCtrl.dispose();
@@ -41,7 +46,6 @@ class _ProSignupPageState extends State<ProSignupPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFFCFAF7),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -52,6 +56,7 @@ class _ProSignupPageState extends State<ProSignupPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 24),
+                  // Bouton de retour.
                   Align(
                     alignment: Alignment.centerLeft,
                     child: IconButton(
@@ -60,10 +65,11 @@ class _ProSignupPageState extends State<ProSignupPage> {
                     ),
                   ),
                   const SizedBox(height: 6),
+                  // Icône d'ajout de personne.
                   Center(
                     child: CircleAvatar(
                       radius: 24,
-                      backgroundColor: const Color(0xFF3F51B5),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       child: const Icon(
                         Icons.person_add_alt,
                         color: Colors.white,
@@ -72,6 +78,7 @@ class _ProSignupPageState extends State<ProSignupPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  // Titre et sous-titre de la page.
                   SizedBox(
                     width: 298,
                     child: Column(
@@ -117,10 +124,12 @@ class _ProSignupPageState extends State<ProSignupPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  // Formulaire d'inscription.
                   SizedBox(
                     width: 298,
                     child: Column(
                       children: [
+                        // Champs Nom et Prénom.
                         Row(
                           children: [
                             Expanded(
@@ -141,14 +150,16 @@ class _ProSignupPageState extends State<ProSignupPage> {
                           ],
                         ),
                         const SizedBox(height: 16),
+                        // Champ Nom de l'entreprise.
                         TextField(
                           controller: _companyNameCtrl,
                           textInputAction: TextInputAction.next,
                           decoration: _filledDecoration('Nom de votre entreprise'),
                         ),
                         const SizedBox(height: 16),
+                        // Champ de sélection de la spécialité.
                         DropdownButtonFormField<String>(
-                          value: _specialty,
+                          initialValue: _specialty,
                           decoration: _filledDecoration('Selectionnez votre spécialité'),
                           icon: const Icon(Icons.keyboard_arrow_down_rounded),
                           items: const [
@@ -161,6 +172,7 @@ class _ProSignupPageState extends State<ProSignupPage> {
                           onChanged: (v) => setState(() => _specialty = v),
                         ),
                         const SizedBox(height: 16),
+                        // Champ Email.
                         TextField(
                           controller: _emailCtrl,
                           keyboardType: TextInputType.emailAddress,
@@ -168,6 +180,7 @@ class _ProSignupPageState extends State<ProSignupPage> {
                           decoration: _filledDecoration('Entrez votre email'),
                         ),
                         const SizedBox(height: 16),
+                        // Champ Numéro de téléphone.
                         TextField(
                           controller: _phoneCtrl,
                           keyboardType: TextInputType.phone,
@@ -175,12 +188,14 @@ class _ProSignupPageState extends State<ProSignupPage> {
                           decoration: _filledDecoration('Entrez votre numéro'),
                         ),
                         const SizedBox(height: 16),
+                        // Champ Adresse.
                         TextField(
                           controller: _addressCtrl,
                           textInputAction: TextInputAction.next,
                           decoration: _filledDecoration('Entrez votre adresse'),
                         ),
                         const SizedBox(height: 16),
+                        // Champ "À propos de vous".
                         TextField(
                           controller: _aboutCtrl,
                           textInputAction: TextInputAction.newline,
@@ -190,8 +205,10 @@ class _ProSignupPageState extends State<ProSignupPage> {
                           decoration: _filledDecoration('Parlez de vous ici'),
                         ),
                         const SizedBox(height: 24),
+                        // Section pour les documents justificatifs.
                         _DocumentsSection(),
                         const SizedBox(height: 24),
+                        // Champ Mot de passe.
                         TextField(
                           controller: _passwordCtrl,
                           obscureText: _obscurePassword,
@@ -204,6 +221,7 @@ class _ProSignupPageState extends State<ProSignupPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
+                        // Champ Confirmation du mot de passe.
                         TextField(
                           controller: _confirmPasswordCtrl,
                           obscureText: _obscureConfirm,
@@ -216,21 +234,19 @@ class _ProSignupPageState extends State<ProSignupPage> {
                           ),
                         ),
                         const SizedBox(height: 24),
+                        // Bouton de création de compte.
                         SizedBox(
                           width: double.infinity,
                           height: 48,
                           child: ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF3F51B5),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
+                            onPressed: () {
+                              // TODO: Implémenter la logique de création de compte.
+                            },
                             child: const Text('Créer mon compte'),
                           ),
                         ),
                         const SizedBox(height: 12),
+                        // Lien vers la page de connexion.
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -257,13 +273,14 @@ class _ProSignupPageState extends State<ProSignupPage> {
     );
   }
 
+  /// Crée une décoration de champ de saisie avec un fond rempli.
   InputDecoration _filledDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
       filled: true,
-      fillColor: const Color(0xFFEBEBEB),
+      fillColor: const Color(0xFFEBEBEB), // Couleur de fond grise.
       border: OutlineInputBorder(
-        borderSide: BorderSide.none,
+        borderSide: BorderSide.none, // Pas de bordure.
         borderRadius: BorderRadius.circular(8),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
@@ -271,6 +288,7 @@ class _ProSignupPageState extends State<ProSignupPage> {
   }
 }
 
+/// Section pour le téléversement de documents justificatifs.
 class _DocumentsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -286,18 +304,21 @@ class _DocumentsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // Titre de la section.
           Text(
             'Documents justificatifs',
             style: theme.textTheme.titleSmall,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 6),
+          // Description de la section.
           Text(
             'Veuillez fournir des documents qui\nprouvent votre activité professionnelle\n(SIRET, assurance décennale, diplômes, etc.)',
             style: theme.textTheme.bodySmall?.copyWith(color: Colors.black54),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
+          // Zone de glisser-déposer.
           Container(
             height: 140,
             width: double.infinity,

@@ -1,8 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/widgets/profile_card.dart';
 
+/// Page où l'utilisateur choisit son type de profil (Novice ou Professionnel).
 class ProfileChoicePage extends StatelessWidget {
   const ProfileChoicePage({super.key});
 
@@ -13,33 +13,32 @@ class ProfileChoicePage extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 24),
-            // top back icon (depth-frame)
+            // Barre supérieure avec bouton de retour.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
                   icon: const Icon(Icons.arrow_back),
-                  onPressed: () => context.pop(),
+                  onPressed: () => context.pop(), // Navigue vers la page précédente.
                 ),
               ),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Center(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 390),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 68), // ~margin-top: 92 with previous padding
-                        // Heading + paragraph container width 313
+                        // Conteneur pour le titre et le paragraphe.
                         SizedBox(
                           width: 313,
                           child: Column(
                             children: [
-                              // heading
+                              // Titre de la page.
                               SizedBox(
                                 height: 32,
                                 child: Center(
@@ -51,7 +50,7 @@ class ProfileChoicePage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              // paragraph 2 lines
+                              // Paragraphe de description.
                               SizedBox(
                                 height: 48,
                                 child: Column(
@@ -84,25 +83,27 @@ class ProfileChoicePage extends StatelessWidget {
 
                         const SizedBox(height: 55),
 
-                        // Cards container width 313
+                        // Conteneur pour les cartes de choix de profil.
                         SizedBox(
                           width: 313,
                           child: Column(
                             children: [
+                              // Carte pour le profil Novice.
                               ProfileCard(
                                 icon: Icons.home_outlined,
                                 title: 'Novice',
                                 line1: 'Je souhaite réaliser un projet',
                                 line2: 'de construction',
-                                onTap: () => context.go('/novice-signup'),
+                                onTap: () => context.push('/novice-signup'), // Navigue vers l'inscription Novice.
                               ),
                               const SizedBox(height: 16),
+                              // Carte pour le profil Professionnel.
                               ProfileCard(
                                 icon: Icons.shopping_bag_outlined,
                                 title: 'Professionnel',
                                 line1: 'Je propose des services dans',
                                 line2: 'le domaine de la construction',
-                                onTap: () => context.go('/pro-signup'),
+                                onTap: () => context.push('/pro-signup'), // Navigue vers l'inscription Professionnel.
                               ),
                             ],
                           ),
@@ -110,7 +111,7 @@ class ProfileChoicePage extends StatelessWidget {
 
                         const SizedBox(height: 118),
 
-                        // Retour outlined button width 313, height 52
+                        // Bouton de retour.
                         SizedBox(
                           width: 313,
                           height: 52,

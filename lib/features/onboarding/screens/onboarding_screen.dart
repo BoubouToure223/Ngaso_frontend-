@@ -1,10 +1,18 @@
 
 import 'package:flutter/material.dart';
 
+/// Un écran individuel utilisé dans le carrousel d'onboarding.
+///
+/// Affiche une image, un titre et un sous-titre pour présenter une fonctionnalité
+/// ou un concept de l'application.
 class OnboardingScreen extends StatelessWidget {
+  /// Le titre principal de l'écran.
   final String title;
+  /// Le sous-titre descriptif.
   final String subtitle;
+  /// Le chemin vers l'image à afficher.
   final String imagePath;
+  /// Indique si c'est le dernier écran de l'onboarding.
   final bool isFinal;
 
   const OnboardingScreen({
@@ -23,6 +31,7 @@ class OnboardingScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Conteneur de l'image avec une ombre portée.
             Container(
               width: double.infinity,
               constraints: const BoxConstraints(maxWidth: 380),
@@ -42,6 +51,7 @@ class OnboardingScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              // Permet d'appliquer le `borderRadius` à l'image.
               clipBehavior: Clip.antiAlias,
               child: AspectRatio(
                 aspectRatio: 16 / 9,
@@ -53,12 +63,14 @@ class OnboardingScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 28),
+            // Titre de l'écran.
             Text(
               title,
               style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
+            // Sous-titre de l'écran.
             Text(
               subtitle,
               style: Theme.of(context).textTheme.bodyMedium,

@@ -1,7 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Page permettant à l'utilisateur de réinitialiser son mot de passe.
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
 
@@ -9,14 +9,20 @@ class ForgotPasswordPage extends StatefulWidget {
   State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
+/// État de la page de mot de passe oublié, gérant le formulaire et les champs de saisie.
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  // Clé globale pour le formulaire, utilisée pour la validation.
   final _formKey = GlobalKey<FormState>();
+  // Contrôleur pour le champ de saisie de l'e-mail.
   final _emailController = TextEditingController();
+  // Contrôleur pour le champ de saisie du nouveau mot de passe.
   final _newPasswordController = TextEditingController();
+  // Contrôleur pour le champ de confirmation du mot de passe.
   final _confirmPasswordController = TextEditingController();
 
   @override
   void dispose() {
+    // Libère les ressources des contrôleurs lorsque le widget est supprimé.
     _emailController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
@@ -29,7 +35,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       body: SafeArea(
         child: Column(
           children: [
+            // Espacement supérieur.
             const SizedBox(height: 24),
+            // Barre supérieure avec bouton de retour.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Align(
@@ -41,17 +49,18 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               ),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Center(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 346),
+                    // Formulaire de réinitialisation de mot de passe.
                     child: Form(
                       key: _formKey,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const SizedBox(height: 116),
+                          // Icône de cadenas.
                           SizedBox(
                             width: 280,
                             child: Center(
@@ -69,6 +78,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             ),
                           ),
                           const SizedBox(height: 16),
+                          // Titre et description.
                           SizedBox(
                             width: 280,
                             child: Column(
@@ -94,6 +104,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             ),
                           ),
                           const SizedBox(height: 24),
+                          // Champ de saisie pour l'email.
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
@@ -105,6 +116,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             decoration: const InputDecoration(labelText: 'Entrez votre email'),
                           ),
                           const SizedBox(height: 16),
+                          // Champ de saisie pour le nouveau mot de passe.
                           TextFormField(
                             controller: _newPasswordController,
                             obscureText: true,
@@ -112,6 +124,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             decoration: const InputDecoration(labelText: 'Entrez le nouveau mot de passe'),
                           ),
                           const SizedBox(height: 16),
+                          // Champ de saisie pour la confirmation du mot de passe.
                           TextFormField(
                             controller: _confirmPasswordController,
                             obscureText: true,
@@ -123,10 +136,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             decoration: const InputDecoration(labelText: 'Confirmez le mot de passe'),
                           ),
                           const SizedBox(height: 41),
+                          // Bouton de confirmation.
                           SizedBox(
                             height: 48,
                             child: ElevatedButton(
                               onPressed: () {
+                                // Valide le formulaire avant de soumettre.
                                 if (!(_formKey.currentState?.validate() ?? false)) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Mot de passe mis à jour (demo)')),

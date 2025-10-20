@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Page d'inscription pour les utilisateurs "novices" (particuliers).
 class NoviceSignupPage extends StatefulWidget {
   const NoviceSignupPage({super.key});
 
@@ -8,7 +9,9 @@ class NoviceSignupPage extends StatefulWidget {
   State<NoviceSignupPage> createState() => _NoviceSignupPageState();
 }
 
+/// État de la page d'inscription pour les novices.
 class _NoviceSignupPageState extends State<NoviceSignupPage> {
+  // Contrôleurs pour les champs du formulaire.
   final TextEditingController _lastNameCtrl = TextEditingController();
   final TextEditingController _firstNameCtrl = TextEditingController();
   final TextEditingController _emailCtrl = TextEditingController();
@@ -16,11 +19,14 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
   final TextEditingController _addressCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
   final TextEditingController _confirmPasswordCtrl = TextEditingController();
+
+  // Indicateurs pour masquer/afficher les mots de passe.
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
 
   @override
   void dispose() {
+    // Libère les ressources des contrôleurs.
     _lastNameCtrl.dispose();
     _firstNameCtrl.dispose();
     _emailCtrl.dispose();
@@ -35,7 +41,6 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFFCFAF7),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -46,6 +51,7 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 34),
+                  // Bouton de retour.
                   Align(
                     alignment: Alignment.centerLeft,
                     child: IconButton(
@@ -54,10 +60,11 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
                     ),
                   ),
                   const SizedBox(height: 10),
+                  // Icône de l'utilisateur.
                   Center(
                     child: CircleAvatar(
                       radius: 24,
-                      backgroundColor: const Color(0xFF3F51B5),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       child: const Icon(
                         Icons.person_add_alt,
                         color: Colors.white,
@@ -66,6 +73,7 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  // Titre et sous-titre de la page.
                   SizedBox(
                     width: 298,
                     child: Column(
@@ -111,26 +119,19 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  // Formulaire d'inscription.
                   SizedBox(
                     width: 298,
                     child: Column(
                       children: [
+                        // Champs Nom et Prénom.
                         Row(
                           children: [
                             Expanded(
                               child: TextField(
                                 controller: _lastNameCtrl,
                                 textInputAction: TextInputAction.next,
-                                decoration: InputDecoration(
-                                  hintText: 'Nom',
-                                  filled: true,
-                                  fillColor: const Color(0xFFEBEBEB),
-                                  border: OutlineInputBorder(
-                                    borderSide: BorderSide.none,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
-                                ),
+                                decoration: _filledDecoration('Nom'),
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -138,81 +139,41 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
                               child: TextField(
                                 controller: _firstNameCtrl,
                                 textInputAction: TextInputAction.next,
-                                decoration: InputDecoration(
-                                  hintText: 'Prénom',
-                                  filled: true,
-                                  fillColor: const Color(0xFFEBEBEB),
-                                  border: OutlineInputBorder(
-                                    borderSide: BorderSide.none,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
-                                ),
+                                decoration: _filledDecoration('Prénom'),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
+                        // Champ Email.
                         TextField(
                           controller: _emailCtrl,
                           keyboardType: TextInputType.emailAddress,
                           textInputAction: TextInputAction.next,
-                          decoration: InputDecoration(
-                            hintText: 'Entrez votre adresse email',
-                            filled: true,
-                            fillColor: const Color(0xFFEBEBEB),
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide.none,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
-                          ),
+                          decoration: _filledDecoration('Entrez votre adresse email'),
                         ),
                         const SizedBox(height: 16),
+                        // Champ Numéro de téléphone.
                         TextField(
                           controller: _phoneCtrl,
                           keyboardType: TextInputType.phone,
                           textInputAction: TextInputAction.next,
-                          decoration: InputDecoration(
-                            hintText: 'Entrez votre numéro',
-                            filled: true,
-                            fillColor: const Color(0xFFEBEBEB),
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide.none,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
-                          ),
+                          decoration: _filledDecoration('Entrez votre numéro'),
                         ),
                         const SizedBox(height: 16),
+                        // Champ Adresse.
                         TextField(
                           controller: _addressCtrl,
                           textInputAction: TextInputAction.next,
-                          decoration: InputDecoration(
-                            hintText: 'Entrez votre adresse',
-                            filled: true,
-                            fillColor: const Color(0xFFEBEBEB),
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide.none,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
-                          ),
+                          decoration: _filledDecoration('Entrez votre adresse'),
                         ),
                         const SizedBox(height: 16),
+                        // Champ Mot de passe.
                         TextField(
                           controller: _passwordCtrl,
                           obscureText: _obscurePassword,
                           textInputAction: TextInputAction.next,
-                          decoration: InputDecoration(
-                            hintText: 'Entrez un mot de passe',
-                            filled: true,
-                            fillColor: const Color(0xFFEBEBEB),
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide.none,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
+                          decoration: _filledDecoration('Entrez un mot de passe').copyWith(
                             suffixIcon: IconButton(
                               icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
                               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -220,19 +181,12 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
+                        // Champ Confirmation du mot de passe.
                         TextField(
                           controller: _confirmPasswordCtrl,
                           obscureText: _obscureConfirm,
                           textInputAction: TextInputAction.done,
-                          decoration: InputDecoration(
-                            hintText: 'Confirmez votre mot de passe',
-                            filled: true,
-                            fillColor: const Color(0xFFEBEBEB),
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide.none,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
+                          decoration: _filledDecoration('Confirmez votre mot de passe').copyWith(
                             suffixIcon: IconButton(
                               icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
                               onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
@@ -240,21 +194,19 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
                           ),
                         ),
                         const SizedBox(height: 24),
+                        // Bouton de création de compte.
                         SizedBox(
                           width: double.infinity,
                           height: 48,
                           child: ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF3F51B5),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
+                            onPressed: () {
+                              // TODO: Implémenter la logique de création de compte.
+                            },
                             child: const Text('Créer mon compte'),
                           ),
                         ),
                         const SizedBox(height: 16),
+                        // Lien vers la page de connexion.
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -278,6 +230,20 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Crée une décoration de champ de saisie avec un fond rempli.
+  InputDecoration _filledDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: const Color(0xFFEBEBEB), // Couleur de fond grise.
+      border: OutlineInputBorder(
+        borderSide: BorderSide.none, // Pas de bordure.
+        borderRadius: BorderRadius.circular(8),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
     );
   }
 }

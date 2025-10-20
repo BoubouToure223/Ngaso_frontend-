@@ -1,7 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// La page de connexion, où les utilisateurs peuvent entrer leurs identifiants.
 class ConnexionPage extends StatefulWidget {
   const ConnexionPage({super.key});
 
@@ -9,13 +9,18 @@ class ConnexionPage extends StatefulWidget {
   State<ConnexionPage> createState() => _ConnexionPageState();
 }
 
+/// L'état de la page de connexion, gérant le formulaire et les contrôleurs de texte.
 class _ConnexionPageState extends State<ConnexionPage> {
+  // Clé globale pour le formulaire, utilisée pour la validation.
   final _formKey = GlobalKey<FormState>();
+  // Contrôleur pour le champ de saisie de l'e-mail.
   final _emailController = TextEditingController();
+  // Contrôleur pour le champ de saisie du mot de passe.
   final _passwordController = TextEditingController();
 
   @override
   void dispose() {
+    // Libère les ressources des contrôleurs lorsque le widget est supprimé.
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -27,12 +32,13 @@ class _ConnexionPageState extends State<ConnexionPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Faux status bar/header per Figma spacing
+            // Espacement supérieur pour simuler une barre d'état.
             const SizedBox(height: 24),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Align(
                 alignment: Alignment.centerLeft,
+                // Bouton de retour pour naviguer vers la page précédente.
                 child: IconButton(
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () => context.pop(),
@@ -40,18 +46,18 @@ class _ConnexionPageState extends State<ConnexionPage> {
               ),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Center(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 346),
+                    // Formulaire contenant les champs de saisie et le bouton de soumission.
                     child: Form(
                       key: _formKey,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const SizedBox(height: 116),
-                          // Centered 48x48 blue circular icon with Material Icon
+                          // Icône de connexion centrée.
                           SizedBox(
                             width: 280,
                             child: Center(
@@ -69,7 +75,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          // Heading and paragraph block width 280 as per Figma
+                          // Titre et paragraphe de la page.
                           SizedBox(
                             width: 280,
                             child: Column(
@@ -101,6 +107,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
                             ),
                           ),
                           const SizedBox(height: 24),
+                          // Champ de saisie pour l'e-mail.
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
@@ -112,6 +119,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
                              decoration: const InputDecoration(labelText: 'Entrez votre email'),
                           ),
                           const SizedBox(height: 16),
+                          // Champ de saisie pour le mot de passe.
                           TextFormField(
                             controller: _passwordController,
                             obscureText: true,
@@ -119,6 +127,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
                             decoration: const InputDecoration(labelText: 'Entrez votre mot de passe'),
                           ),
                           const SizedBox(height: 12),
+                          // Bouton pour la récupération du mot de passe.
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
@@ -127,10 +136,12 @@ class _ConnexionPageState extends State<ConnexionPage> {
                             ),
                           ),
                           const SizedBox(height: 16),
+                          // Bouton de connexion.
                           SizedBox(
                             height: 48,
                             child: ElevatedButton(
                               onPressed: () {
+                                // Valide le formulaire avant de continuer.
                                 if (!(_formKey.currentState?.validate() ?? false)) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Connexion… (demo)')),
@@ -140,6 +151,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
                             ),
                           ),
                           const SizedBox(height: 24),
+                          // Lien pour s'inscrire.
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -149,6 +161,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
                               ),
                               TextButton(
                                 onPressed: () => context.push('/profile-choice'),
+                                style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.primary),
                                 child: const Text("S'inscrire"),
                               )
                             ],
