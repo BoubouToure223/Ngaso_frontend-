@@ -83,7 +83,7 @@ final GoRouter router = GoRouter(
       },
       routes: <RouteBase>[
         GoRoute(
-          path: '/Novice/home',
+          path: '/app/home',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceHomePage();
           },
