@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class NoviceHomePage extends StatelessWidget {
   const NoviceHomePage({super.key});
@@ -39,7 +40,9 @@ class NoviceHomePage extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.notifications_none),
                         color: const Color(0xFF1C120D),
-                        onPressed: () {},
+                        onPressed: () {
+                          context.go('/app/notifications');
+                        },
                       ),
                     ],
                   ),
@@ -68,11 +71,18 @@ class NoviceHomePage extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: _StatCard(
-                            emoji: '📬',
-                            title: 'Propositions',
-                            value: '7',
-                            subtitle: '5 en attente, 2 validées',
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () => context.go('/app/proposition-details'),
+                              child: _StatCard(
+                                emoji: '📬',
+                                title: 'Propositions',
+                                value: '7',
+                                subtitle: '5 en attente, 2 validées',
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -112,7 +122,9 @@ class NoviceHomePage extends StatelessWidget {
                           ),
                         ),
                         TextButton.icon(
-                          onPressed: () {},
+                          onPressed: () {
+                            context.go('/app/projet');
+                          },
                           icon: const Icon(Icons.chevron_right, size: 18),
                           label: const Text('Voir tout'),
                           style: TextButton.styleFrom(foregroundColor: const Color(0xFF0F172A)),
@@ -126,7 +138,8 @@ class NoviceHomePage extends StatelessWidget {
                       location: 'ACI 2000',
                       budget: '2 0000000 fcfa',
                       dateText: 'Il y a 2 jours',
-                      onPropose: () {},
+                      onPropose: () { context.go('/app/proposition-details'); },
+                      onTap: () { context.go('/app/proposition-details'); },
                       primary: const Color(0xFF3F51B5),
                     ),
                     const SizedBox(height: 12),
@@ -135,7 +148,8 @@ class NoviceHomePage extends StatelessWidget {
                       location: 'ACI 2000',
                       budget: '2 0000000 fcfa',
                       dateText: 'Il y a 2 jours',
-                      onPropose: () {},
+                      onPropose: () { context.go('/app/proposition-details'); },
+                      onTap: () { context.go('/app/proposition-details'); },
                       primary: const Color(0xFF3F51B5),
                     ),
                     const SizedBox(height: 12),
@@ -144,7 +158,8 @@ class NoviceHomePage extends StatelessWidget {
                       location: 'ACI 2000',
                       budget: '2 0000000 fcfa',
                       dateText: 'Il y a 2 jours',
-                      onPropose: () {},
+                      onPropose: () { context.go('/app/proposition-details'); },
+                      onTap: () { context.go('/app/proposition-details'); },
                       primary: const Color(0xFF3F51B5),
                     ),
                     const SizedBox(height: 20),
@@ -293,6 +308,7 @@ class _ProjectCard extends StatelessWidget {
     required this.dateText,
     required this.onPropose,
     required this.primary,
+    this.onTap,
   });
 
   final String title;
@@ -301,58 +317,63 @@ class _ProjectCard extends StatelessWidget {
   final String dateText;
   final VoidCallback onPropose;
   final Color primary;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 2, offset: Offset(0, 1))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF0F172A))),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              const Icon(Icons.place_outlined, size: 16, color: Color(0xFF0F172A)),
-              const SizedBox(width: 6),
-              Text(location, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF0F172A))),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.attach_money, size: 16, color: Color(0xFF0F172A)),
-                  const SizedBox(width: 4),
-                  Text(budget, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500, color: const Color(0xFF0F172A))),
-                ],
-              ),
-              Text(dateText, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF64748B))),
-            ],
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 36,
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onPropose,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-              ),
-              child: const Text('Faire une proposition'),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 2, offset: Offset(0, 1))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF0F172A))),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.place_outlined, size: 16, color: Color(0xFF0F172A)),
+                const SizedBox(width: 6),
+                Text(location, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF0F172A))),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.attach_money, size: 16, color: Color(0xFF0F172A)),
+                    const SizedBox(width: 4),
+                    Text(budget, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500, color: const Color(0xFF0F172A))),
+                  ],
+                ),
+                Text(dateText, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF64748B))),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 36,
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onPropose,
+                icon: const Icon(Icons.send, size: 16),
+                label: const Text('Faire une proposition'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3F51B5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -5,8 +5,6 @@ class NoviceProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Profile (Novice)')),
-    );
+    return const Scaffold(body: SizedBox.shrink());
   }
 }

@@ -13,6 +13,8 @@ import 'package:myapp/features/novice/screens/home_page.dart';
 import 'package:myapp/features/novice/screens/messages_page.dart';
 import 'package:myapp/features/novice/screens/projects_page.dart';
 import 'package:myapp/features/novice/screens/profile_page.dart';
+import 'package:myapp/features/novice/screens/notifications_page.dart';
+import 'package:myapp/features/novice/screens/proposal_details_page.dart';
 import 'package:myapp/features/pro/screens/home_page.dart';
 import 'package:myapp/features/pro/screens/messages_page.dart';
 import 'package:myapp/features/pro/screens/projects_page.dart';
@@ -104,6 +106,18 @@ final GoRouter router = GoRouter(
           path: '/app/profil',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceProfilePage();
+          },
+        ),
+        GoRoute(
+          path: '/app/notifications',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceNotificationsPage();
+          },
+        ),
+        GoRoute(
+          path: '/app/proposition-details',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceProposalDetailsPage();
           },
         ),
       ],
