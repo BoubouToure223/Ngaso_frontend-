@@ -4,14 +4,14 @@ import 'package:go_router/go_router.dart';
 // Filtre possible pour les propositions
 enum _ProposalStatus { all, pending, validated, rejected }
 
-class NoviceProposalDetailsPage extends StatefulWidget {
-  const NoviceProposalDetailsPage({super.key});
+class ProProposalDetailsPage extends StatefulWidget {
+  const ProProposalDetailsPage({super.key});
 
   @override
-  State<NoviceProposalDetailsPage> createState() => _NoviceProposalDetailsPageState();
+  State<ProProposalDetailsPage> createState() => _ProProposalDetailsPageState();
 }
 
-class _NoviceProposalDetailsPageState extends State<NoviceProposalDetailsPage> {
+class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
   // Palette alignée avec Notifications
   Color get blue => const Color(0xFF2563EB);
   Color get yellow => const Color(0xFFFDE047);

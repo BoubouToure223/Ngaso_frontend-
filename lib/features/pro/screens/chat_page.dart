@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 
-class NoviceChatPage extends StatefulWidget {
-  const NoviceChatPage({super.key, this.name, this.initials});
+class ProChatPage extends StatefulWidget {
+  const ProChatPage({super.key, this.name, this.initials});
   final String? name;
   final String? initials;
 
   @override
-  State<NoviceChatPage> createState() => _NoviceChatPageState();
+  State<ProChatPage> createState() => _ProChatPageState();
 }
 
-class _NoviceChatPageState extends State<NoviceChatPage> {
+class _ProChatPageState extends State<ProChatPage> {
   final _controller = TextEditingController();
   final _scrollCtrl = ScrollController();
 

@@ -9,18 +9,18 @@ import 'package:myapp/features/auth/screens/pro_signup_page.dart';
 import 'package:myapp/features/onboarding/screens/onboarding_page.dart';
 import 'package:myapp/features/splash/screens/splash_page.dart';
 import 'package:myapp/shared/shell/app_shell.dart';
-import 'package:myapp/features/novice/screens/home_page.dart';
-import 'package:myapp/features/novice/screens/messages_page.dart';
-import 'package:myapp/features/novice/screens/projects_page.dart';
-import 'package:myapp/features/novice/screens/profile_page.dart';
-import 'package:myapp/features/novice/screens/notifications_page.dart';
-import 'package:myapp/features/novice/screens/proposal_details_page.dart';
-import 'package:myapp/features/novice/screens/chat_page.dart';
-import 'package:myapp/features/novice/screens/proposal_create_page.dart';
 import 'package:myapp/features/pro/screens/home_page.dart';
 import 'package:myapp/features/pro/screens/messages_page.dart';
 import 'package:myapp/features/pro/screens/projects_page.dart';
 import 'package:myapp/features/pro/screens/profile_page.dart';
+import 'package:myapp/features/pro/screens/notifications_page.dart';
+import 'package:myapp/features/pro/screens/proposal_details_page.dart';
+import 'package:myapp/features/pro/screens/chat_page.dart';
+import 'package:myapp/features/pro/screens/proposal_create_page.dart';
+import 'package:myapp/features/novice/screens/home_page.dart';
+import 'package:myapp/features/novice/screens/messages_page.dart';
+import 'package:myapp/features/novice/screens/projects_page.dart';
+import 'package:myapp/features/novice/screens/profile_page.dart';
 
 /// La configuration du routeur de l'application.
 final GoRouter router = GoRouter(
@@ -74,7 +74,7 @@ final GoRouter router = GoRouter(
         return const NoviceSignupPage();
       },
     ),
-    // Espace Novice avec barre de navigation persistante (AppShell paramétré).
+    // Espace Professionnels avec barre de navigation persistante (AppShell paramétré).
     ShellRoute(
       builder: (BuildContext context, GoRouterState state, Widget child) {
         const noviceTabs = [
@@ -83,49 +83,49 @@ final GoRouter router = GoRouter(
           NavTab('/app/projet', 'Projet', Icons.topic_outlined),
           NavTab('/app/profil', 'Profile', Icons.person_outline),
         ];
-        return AppShell(child: child, tabs: noviceTabs);
+        return AppShell(tabs: noviceTabs, child: child);
       },
       routes: <RouteBase>[
         GoRoute(
           path: '/app/home',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceHomePage();
+            return const ProHomePage();
           },
         ),
         GoRoute(
           path: '/app/messages',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceMessagesPage();
+            return const ProMessagesPage();
           },
         ),
         GoRoute(
           path: '/app/projet',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceProjectsPage();
+            return const ProProjectsPage();
           },
         ),
         GoRoute(
           path: '/app/profil',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceProfilePage();
+            return const ProProfilePage();
           },
         ),
         GoRoute(
           path: '/app/notifications',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceNotificationsPage();
+            return const ProNotificationsPage();
           },
         ),
         GoRoute(
           path: '/app/proposition-details',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceProposalDetailsPage();
+            return const ProProposalDetailsPage();
           },
         ),
         GoRoute(
           path: '/app/proposition-create',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceProposalCreatePage();
+            return const ProProposalCreatePage();
           },
         ),
         GoRoute(
@@ -138,12 +138,12 @@ final GoRouter router = GoRouter(
               name = extra['name'] as String?;
               initials = extra['initials'] as String?;
             }
-            return NoviceChatPage(name: name, initials: initials);
+            return ProChatPage(name: name, initials: initials);
           },
         ),
       ],
     ),
-    // Espace Professionnel avec barre de navigation persistante (AppShell paramétré).
+    // Espace Novice avec barre de navigation persistante (AppShell paramétré).
     ShellRoute(
       builder: (BuildContext context, GoRouterState state, Widget child) {
         const proTabs = [
@@ -152,31 +152,31 @@ final GoRouter router = GoRouter(
           NavTab('/pro/projet', 'Projet', Icons.topic_outlined),
           NavTab('/pro/profil', 'Profile', Icons.person_outline),
         ];
-        return AppShell(child: child, tabs: proTabs);
+        return AppShell(tabs: proTabs, child: child);
       },
       routes: <RouteBase>[
         GoRoute(
           path: '/pro/home',
           builder: (BuildContext context, GoRouterState state) {
-            return const ProHomePage();
+            return const NoviceHomePage();
           },
         ),
         GoRoute(
           path: '/pro/messages',
           builder: (BuildContext context, GoRouterState state) {
-            return const ProMessagesPage();
+            return const NoviceMessagesPage();
           },
         ),
         GoRoute(
           path: '/pro/projet',
           builder: (BuildContext context, GoRouterState state) {
-            return const ProProjectsPage();
+            return const NoviceProjectsPage();
           },
         ),
         GoRoute(
           path: '/pro/profil',
           builder: (BuildContext context, GoRouterState state) {
-            return const ProProfilePage();
+            return const NoviceProfilePage();
           },
         ),
       ],

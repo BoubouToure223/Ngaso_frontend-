@@ -5,8 +5,6 @@ class ProProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Profile (Pro)')),
-    );
+    return const Scaffold(body: SizedBox.shrink());
   }
 }

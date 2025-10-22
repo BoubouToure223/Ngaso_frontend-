@@ -39,14 +39,14 @@ class _NotifItem {
       );
 }
 
-class NoviceNotificationsPage extends StatefulWidget {
-  const NoviceNotificationsPage({super.key});
+class ProNotificationsPage extends StatefulWidget {
+  const ProNotificationsPage({super.key});
 
   @override
-  State<NoviceNotificationsPage> createState() => _NoviceNotificationsPageState();
+  State<ProNotificationsPage> createState() => _ProNotificationsPageState();
 }
 
-class _NoviceNotificationsPageState extends State<NoviceNotificationsPage> {
+class _ProNotificationsPageState extends State<ProNotificationsPage> {
   _NotifCategory? _filter; // null => Tous
 
   late List<_NotifItem> _items;
@@ -190,12 +190,7 @@ class _NoviceNotificationsPageState extends State<NoviceNotificationsPage> {
                     selected: _filter == _NotifCategory.messages,
                     onTap: () => setState(() => _filter = _NotifCategory.messages),
                   ),
-                  const SizedBox(width: 8),
-                  _SegmentChip(
-                    label: 'Acceptations',
-                    selected: _filter == _NotifCategory.acceptations,
-                    onTap: () => setState(() => _filter = _NotifCategory.acceptations),
-                  ),
+                
                 ],
               ),
             ),
@@ -312,7 +307,7 @@ class _NotifCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: faded ? const Color(0xFFFFFFFF).withOpacity(0.6) : Colors.white,
+        color: faded ? const Color(0xFFFFFFFF).withValues(alpha: 0.6) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor, width: 2),
         boxShadow: const [BoxShadow(color: Color(0x1A000000), blurRadius: 2, offset: Offset(0, 1))],

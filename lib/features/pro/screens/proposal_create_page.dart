@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 
-class NoviceProposalCreatePage extends StatefulWidget {
-  const NoviceProposalCreatePage({super.key});
+class ProProposalCreatePage extends StatefulWidget {
+  const ProProposalCreatePage({super.key});
 
   @override
-  State<NoviceProposalCreatePage> createState() => _NoviceProposalCreatePageState();
+  State<ProProposalCreatePage> createState() => _ProProposalCreatePageState();
 }
 
-class _NoviceProposalCreatePageState extends State<NoviceProposalCreatePage> {
+class _ProProposalCreatePageState extends State<ProProposalCreatePage> {
   final _titleCtrl = TextEditingController();
   final _detailCtrl = TextEditingController();
   final List<PlatformFile> _files = [];
