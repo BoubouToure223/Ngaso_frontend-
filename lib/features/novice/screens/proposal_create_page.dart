@@ -143,7 +143,7 @@ class _NoviceProposalCreatePageState extends State<NoviceProposalCreatePage> {
                   const Text('Déposez vos fichiers ici ou cliquez pour parcourir', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF4B5563))),
                   const SizedBox(height: 12),
                   SizedBox(
-                    height: 36,
+                    height: 50,
                     child: ElevatedButton.icon(
                       onPressed: _pickFiles,
                       icon: const Icon(Icons.attach_file, size: 16),

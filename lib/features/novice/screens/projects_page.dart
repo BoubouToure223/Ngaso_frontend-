@@ -177,7 +177,7 @@ class _ProjectCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               SizedBox(
-                height: 32,
+                height: 50,
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => context.push('/app/proposition-create'),
