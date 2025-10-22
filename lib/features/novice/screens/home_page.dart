@@ -100,11 +100,18 @@ class NoviceHomePage extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: _StatCard(
-                            emoji: '💬',
-                            title: 'Messages',
-                            value: '5',
-                            subtitle: '3 non lus',
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () => context.go('/app/messages'),
+                              child: _StatCard(
+                                emoji: '💬',
+                                title: 'Messages',
+                                value: '5',
+                                subtitle: '3 non lus',
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -138,8 +145,8 @@ class NoviceHomePage extends StatelessWidget {
                       location: 'ACI 2000',
                       budget: '2 0000000 fcfa',
                       dateText: 'Il y a 2 jours',
-                      onPropose: () { context.go('/app/proposition-details'); },
-                      onTap: () { context.go('/app/proposition-details'); },
+                      onPropose: () { context.push('/app/proposition-create'); },
+                      onTap: () { context.push('/app/proposition-create'); },
                       primary: const Color(0xFF3F51B5),
                     ),
                     const SizedBox(height: 12),
@@ -148,8 +155,8 @@ class NoviceHomePage extends StatelessWidget {
                       location: 'ACI 2000',
                       budget: '2 0000000 fcfa',
                       dateText: 'Il y a 2 jours',
-                      onPropose: () { context.go('/app/proposition-details'); },
-                      onTap: () { context.go('/app/proposition-details'); },
+                      onPropose: () { context.push('/app/proposition-create'); },
+                      onTap: () { context.push('/app/proposition-create'); },
                       primary: const Color(0xFF3F51B5),
                     ),
                     const SizedBox(height: 12),
@@ -158,8 +165,8 @@ class NoviceHomePage extends StatelessWidget {
                       location: 'ACI 2000',
                       budget: '2 0000000 fcfa',
                       dateText: 'Il y a 2 jours',
-                      onPropose: () { context.go('/app/proposition-details'); },
-                      onTap: () { context.go('/app/proposition-details'); },
+                      onPropose: () { context.push('/app/proposition-create'); },
+                      onTap: () { context.push('/app/proposition-create'); },
                       primary: const Color(0xFF3F51B5),
                     ),
                     const SizedBox(height: 20),

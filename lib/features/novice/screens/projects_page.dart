@@ -97,16 +97,25 @@ class _NoviceProjectsPageState extends State<NoviceProjectsPage> {
               ],
             ),
             const SizedBox(height: 16),
-            Expanded(
-              child: ListView.separated(
-                itemCount: items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final it = items[index];
-                  return _ProjectCard(item: it);
-                },
+            if (items.isEmpty)
+              const Expanded(
+                child: _EmptyState(
+                  emoji: '📂',
+                  title: 'Aucun projet',
+                  subtitle: 'Revenez plus tard ou modifiez votre recherche.',
+                ),
+              )
+            else
+              Expanded(
+                child: ListView.separated(
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final it = items[index];
+                    return _ProjectCard(item: it);
+                  },
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -171,7 +180,7 @@ class _ProjectCard extends StatelessWidget {
                 height: 32,
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => context.push('/app/proposition-create'),
                   icon: const Icon(Icons.send, size: 16),
                   label: const Text('Faire une proposition'),
                   style: ElevatedButton.styleFrom(
@@ -203,4 +212,28 @@ class _ProjectItem {
   final String budget;
   final String dateText;
   final String author;
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.emoji, required this.title, required this.subtitle});
+  final String emoji;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 36)),
+          const SizedBox(height: 8),
+          Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF0F172A))),
+          const SizedBox(height: 4),
+          Text(subtitle, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF64748B))),
+        ],
+      ),
+    );
+  }
 }

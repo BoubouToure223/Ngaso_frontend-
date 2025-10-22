@@ -15,6 +15,8 @@ import 'package:myapp/features/novice/screens/projects_page.dart';
 import 'package:myapp/features/novice/screens/profile_page.dart';
 import 'package:myapp/features/novice/screens/notifications_page.dart';
 import 'package:myapp/features/novice/screens/proposal_details_page.dart';
+import 'package:myapp/features/novice/screens/chat_page.dart';
+import 'package:myapp/features/novice/screens/proposal_create_page.dart';
 import 'package:myapp/features/pro/screens/home_page.dart';
 import 'package:myapp/features/pro/screens/messages_page.dart';
 import 'package:myapp/features/pro/screens/projects_page.dart';
@@ -118,6 +120,25 @@ final GoRouter router = GoRouter(
           path: '/app/proposition-details',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceProposalDetailsPage();
+          },
+        ),
+        GoRoute(
+          path: '/app/proposition-create',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceProposalCreatePage();
+          },
+        ),
+        GoRoute(
+          path: '/app/chat',
+          builder: (BuildContext context, GoRouterState state) {
+            final extra = state.extra;
+            String? name;
+            String? initials;
+            if (extra is Map) {
+              name = extra['name'] as String?;
+              initials = extra['initials'] as String?;
+            }
+            return NoviceChatPage(name: name, initials: initials);
           },
         ),
       ],
