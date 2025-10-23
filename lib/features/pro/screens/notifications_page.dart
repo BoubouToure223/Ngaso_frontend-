@@ -130,7 +130,7 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/app/home'),
+          onPressed: () => context.go('/pro/home'),
         ),
         centerTitle: false,
         elevation: 0,

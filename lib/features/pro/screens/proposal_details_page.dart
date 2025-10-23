@@ -67,7 +67,7 @@ class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/app/home'),
+          onPressed: () => context.go('/pro/home'),
         ),
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,

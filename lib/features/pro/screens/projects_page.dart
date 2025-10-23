@@ -45,7 +45,7 @@ class _ProProjectsPageState extends State<ProProjectsPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF111827)),
-          onPressed: () => context.go('/app/home'),
+          onPressed: () => context.go('/pro/home'),
         ),
         title: Text('Projets', style: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
         centerTitle: false,
@@ -180,7 +180,7 @@ class _ProjectCard extends StatelessWidget {
                 height: 50,
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => context.push('/app/proposition-create'),
+                  onPressed: () => context.push('/pro/proposition-create'),
                   icon: const Icon(Icons.send, size: 16),
                   label: const Text('Faire une proposition'),
                   style: ElevatedButton.styleFrom(

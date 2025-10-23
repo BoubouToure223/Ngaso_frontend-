@@ -15,7 +15,7 @@ class ProProfilePage extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF111827)),
-          onPressed: () => context.go('/app/home'),
+          onPressed: () => context.go('/pro/home'),
         ),
         centerTitle: true,
         title: Text('Profil', style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF1F2937), fontWeight: FontWeight.w600)),
@@ -103,7 +103,7 @@ class ProProfilePage extends StatelessWidget {
                 width: double.infinity,
                 height: 48,
                 child: OutlinedButton.icon(
-                  onPressed: () { context.go('/app/change-password'); },
+                  onPressed: () { context.go('/pro/change-password'); },
                   icon: const Icon(Icons.password_outlined, color: Color(0xFF374151)),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFFF3F4F6)),

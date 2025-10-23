@@ -60,7 +60,7 @@ class _ProChangePasswordPageState extends State<ProChangePasswordPage> {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF111827)),
-          onPressed: () => context.go('/app/profil'),
+          onPressed: () => context.go('/pro/profil'),
         ),
         centerTitle: true,
         title: const SizedBox.shrink(),

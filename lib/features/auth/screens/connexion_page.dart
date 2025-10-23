@@ -143,7 +143,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
                               onPressed: () {
                                 // Valide le formulaire avant de continuer.
                                 if (!(_formKey.currentState?.validate() ?? false)) return;
-                                context.go('/app/home');
+                                context.go('/pro/home');
                               },
                               child: const Text('Se connecter'),
                             ),

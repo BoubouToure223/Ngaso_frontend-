@@ -41,7 +41,7 @@ class ProHomePage extends StatelessWidget {
                         icon: const Icon(Icons.notifications_none),
                         color: const Color(0xFF1C120D),
                         onPressed: () {
-                          context.go('/app/notifications');
+                          context.go('/pro/notifications');
                         },
                       ),
                     ],
@@ -75,7 +75,7 @@ class ProHomePage extends StatelessWidget {
                             color: Colors.transparent,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(8),
-                              onTap: () => context.go('/app/proposition-details'),
+                              onTap: () => context.go('/pro/proposition-details'),
                               child: _StatCard(
                                 emoji: '📬',
                                 title: 'Propositions',
@@ -104,7 +104,7 @@ class ProHomePage extends StatelessWidget {
                             color: Colors.transparent,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(8),
-                              onTap: () => context.go('/app/messages'),
+                              onTap: () => context.go('/pro/messages'),
                               child: _StatCard(
                                 emoji: '💬',
                                 title: 'Messages',
@@ -130,7 +130,7 @@ class ProHomePage extends StatelessWidget {
                         ),
                         TextButton.icon(
                           onPressed: () {
-                            context.go('/app/projet');
+                            context.go('/pro/projet');
                           },
                           icon: const Icon(Icons.chevron_right, size: 18),
                           label: const Text('Voir tout'),
@@ -145,8 +145,8 @@ class ProHomePage extends StatelessWidget {
                       location: 'ACI 2000',
                       budget: '2 0000000 fcfa',
                       dateText: 'Il y a 2 jours',
-                      onPropose: () { context.push('/app/proposition-create'); },
-                      onTap: () { context.push('/app/proposition-create'); },
+                      onPropose: () { context.push('/pro/proposition-create'); },
+                      onTap: () { context.push('/pro/proposition-create'); },
                       primary: const Color(0xFF3F51B5),
                     ),
                     const SizedBox(height: 12),
@@ -155,8 +155,8 @@ class ProHomePage extends StatelessWidget {
                       location: 'ACI 2000',
                       budget: '2 0000000 fcfa',
                       dateText: 'Il y a 2 jours',
-                      onPropose: () { context.push('/app/proposition-create'); },
-                      onTap: () { context.push('/app/proposition-create'); },
+                      onPropose: () { context.push('/pro/proposition-create'); },
+                      onTap: () { context.push('/pro/proposition-create'); },
                       primary: const Color(0xFF3F51B5),
                     ),
                     const SizedBox(height: 12),
@@ -165,8 +165,8 @@ class ProHomePage extends StatelessWidget {
                       location: 'ACI 2000',
                       budget: '2 0000000 fcfa',
                       dateText: 'Il y a 2 jours',
-                      onPropose: () { context.push('/app/proposition-create'); },
-                      onTap: () { context.push('/app/proposition-create'); },
+                      onPropose: () { context.push('/pro/proposition-create'); },
+                      onTap: () { context.push('/pro/proposition-create'); },
                       primary: const Color(0xFF3F51B5),
                     ),
                     const SizedBox(height: 20),
@@ -180,7 +180,7 @@ class ProHomePage extends StatelessWidget {
                           ),
                         ),
                         TextButton(
-                          onPressed: () { context.go('/app/realizations'); },
+                          onPressed: () { context.go('/pro/realizations'); },
                           child: const Text('Voir tout'),
                         ),
                       ],
