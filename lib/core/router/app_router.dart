@@ -29,7 +29,7 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/',
       builder: (BuildContext context, GoRouterState state) {
-        return const SplashPage();
+        return const NoviceHomePage();
       },
     ),
     // La route pour la page d'onboarding.
