@@ -23,6 +23,17 @@ import 'package:myapp/features/novice/screens/home_page.dart';
 import 'package:myapp/features/novice/screens/messages_page.dart';
 import 'package:myapp/features/novice/screens/projects_page.dart';
 import 'package:myapp/features/novice/screens/profile_page.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+// Fonction utilitaire pour le SVG (avec placeholder discret)
+Widget createSvgIcon(String assetPath) {
+  return SvgPicture.asset(
+    assetPath,
+    width: 24,
+    height: 24,
+    placeholderBuilder: (context) => const SizedBox(width: 24, height: 24),
+  );
+}
 
 /// La configuration du routeur de l'application.
 final GoRouter router = GoRouter(
@@ -30,9 +41,7 @@ final GoRouter router = GoRouter(
     // La route initiale de l'application.
     GoRoute(
       path: '/',
-      builder: (BuildContext context, GoRouterState state) {
-        return const NoviceHomePage();
-      },
+      redirect: (BuildContext context, GoRouterState state) => '/Novice/home',
     ),
     // La route pour la page d'onboarding.
     GoRoute(
@@ -79,13 +88,13 @@ final GoRouter router = GoRouter(
     // Espace Professionnels avec barre de navigation persistante (AppShell paramétré).
     ShellRoute(
       builder: (BuildContext context, GoRouterState state, Widget child) {
-        const noviceTabs = [
-          NavTab('/pro/home', 'Accueil', Icons.home_outlined),
-          NavTab('/pro/messages', 'Messages', Icons.chat_bubble_outline),
-          NavTab('/pro/projet', 'Projet', Icons.topic_outlined),
-          NavTab('/pro/profil', 'Profile', Icons.person_outline),
+        const proTabs = [
+          NavTab('/pro/home', 'Accueil', Icon(Icons.home_outlined)),
+          NavTab('/pro/messages', 'Messages', Icon(Icons.chat_bubble_outline)),
+          NavTab('/pro/projet', 'Projet', Icon(Icons.topic_outlined)),
+          NavTab('/pro/profil', 'Profile', Icon(Icons.person_outline)),
         ];
-        return AppShell(tabs: noviceTabs, child: child);
+        return AppShell(tabs: proTabs, child: child);
       },
       routes: <RouteBase>[
         GoRoute(
@@ -160,13 +169,13 @@ final GoRouter router = GoRouter(
     // Espace Novice avec barre de navigation persistante (AppShell paramétré).
     ShellRoute(
       builder: (BuildContext context, GoRouterState state, Widget child) {
-        const proTabs = [
-          NavTab('/Novice/home', 'Accueil', Icons.home_outlined),
-          NavTab('/Novice/messages', 'Messages', Icons.chat_bubble_outline),
-          NavTab('/Novice/projet', 'Projet', Icons.topic_outlined),
-          NavTab('/Novice/profil', 'Profile', Icons.person_outline),
+        final noviceTabs = [
+          NavTab('/Novice/home', 'Accueil', createSvgIcon('assets/icons/home_icon.svg')),
+          NavTab('/Novice/messages', 'Messages', createSvgIcon('assets/icons/message_icon.svg')),
+          NavTab('/Novice/projet', 'Demandes', createSvgIcon('assets/icons/demande_icon.svg')),
+          NavTab('/Novice/profil', 'Profile', createSvgIcon('assets/icons/profile_icon.svg')),
         ];
-        return AppShell(tabs: proTabs, child: child);
+        return AppShell(tabs: noviceTabs, child: child);
       },
       routes: <RouteBase>[
         GoRoute(
