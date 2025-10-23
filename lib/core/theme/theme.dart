@@ -24,10 +24,18 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: const Color(0xFFFCFAF7),
       textTheme: _appTextTheme,
-      appBarTheme: AppBarTheme(
-        backgroundColor: primarySeedColor,
-        foregroundColor: Colors.white,
-        titleTextStyle: GoogleFonts.oswald(fontSize: 24, fontWeight: FontWeight.bold),
+      appBarTheme: const AppBarTheme(
+        elevation: 0,
+        backgroundColor: Color(0xFFFCFAF7),
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: Color(0xFF111827),
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF1F2937),
+        ),
+        iconTheme: IconThemeData(color: Color(0xFF111827)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

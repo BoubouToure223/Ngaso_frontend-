@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Page Pro: liste des conversations et accès à la messagerie.
+///
+/// - Barre de recherche pour filtrer les conversations.
+/// - Liste triée (récent d'abord) avec badge d'"non lu".
+/// - Accès à la discussion via `ProChatPage`.
 class ProMessagesPage extends StatefulWidget {
   const ProMessagesPage({super.key});
 
@@ -9,8 +14,10 @@ class ProMessagesPage extends StatefulWidget {
 }
 
 class _ProMessagesPageState extends State<ProMessagesPage> {
+  /// Contrôleur pour la recherche.
   final TextEditingController _searchCtrl = TextEditingController();
 
+  /// Conversations mock pour démonstration.
   late final List<_Conversation> _all = [
     _Conversation(
       initials: 'AB',
@@ -66,21 +73,16 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
       backgroundColor: const Color(0xFFFCFAF7),
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF111827)),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/pro/home'),
         ),
-        title: Text('Messages 💬', style: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
-        centerTitle: false,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        iconTheme: const IconThemeData(color: Color(0xFF111827)),
-        foregroundColor: const Color(0xFF111827),
-        elevation: 0,
+        title: const Text('Messages 💬'),
       ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
         child: Column(
           children: [
+            // Barre de recherche
             Row(
               children: [
                 Expanded(
@@ -105,6 +107,7 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
             ),
             const SizedBox(height: 12),
             if (filtered.isEmpty)
+              // État vide (aucune conversation)
               const Expanded(
                 child: _EmptyState(
                   emoji: '💬',
@@ -113,6 +116,7 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
                 ),
               )
             else
+              // Liste des conversations
               Expanded(
                 child: ListView.separated(
                   itemCount: filtered.length,
@@ -133,6 +137,7 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
     );
   }
 
+  /// Filtre la liste des conversations selon la requête [q].
   List<_Conversation> _filter(List<_Conversation> all, String q) {
     if (q.trim().isEmpty) return all;
     final lq = q.toLowerCase();
@@ -141,6 +146,8 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
         .toList(growable: false);
   }
 
+  /// Formate l'horodatage (aujourd'hui -> HH:mm, hier -> "Hier", <7j -> jour,
+  /// sinon -> dd/mm).
   String _formatTime(DateTime dt) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -161,6 +168,7 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
     return '$dd/$mm';
   }
 
+  /// Ouvre la conversation sélectionnée dans la page de chat.
   Future<void> _openConversation(_Conversation conv) async {
     if (conv.unread > 0) {
       setState(() {
@@ -172,6 +180,7 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
   }
 }
 
+/// Tuile d'une conversation avec avatar, nom, dernier message et heure.
 class _ConversationTile extends StatelessWidget {
   const _ConversationTile({required this.conv, required this.formatTime, this.onTap});
   final _Conversation conv;
@@ -187,6 +196,7 @@ class _ConversationTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
+            // Avatar + statut en ligne
             Stack(
               children: [
                 CircleAvatar(
@@ -203,6 +213,7 @@ class _ConversationTile extends StatelessWidget {
               ],
             ),
             const SizedBox(width: 12),
+            // Colonne: nom + heure, puis dernier message + badge non lu
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,6 +254,7 @@ class _ConversationTile extends StatelessWidget {
   }
 }
 
+/// Modèle d'une conversation.
 class _Conversation {
   _Conversation({
     required this.initials,
@@ -260,6 +272,7 @@ class _Conversation {
   final bool online;
 }
 
+/// État vide avec émoji, titre et sous-titre.
 class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.emoji, required this.title, required this.subtitle});
   final String emoji;

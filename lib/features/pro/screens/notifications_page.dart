@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-enum _NotifCategory { demandes, propositions, messages, acceptations }
+/// Page des notifications (Espace Pro).
+///
+/// - Affiche les notifications récentes et anciennes.
+/// - Filtres par catégorie: Demandes, Propositions, Messages.
+/// - Comportement au clic configuré pour ouvrir la bonne page.
+/// - Les propositions rejetées n'exposent pas d'action (désactivées).
+enum _NotifCategory { demandes, propositions, messages,}
 
+/// Modèle léger d'une notification à afficher.
 class _NotifItem {
   const _NotifItem({
     required this.category,
@@ -39,6 +46,7 @@ class _NotifItem {
       );
 }
 
+/// Entrée de route vers la page des notifications (Pro).
 class ProNotificationsPage extends StatefulWidget {
   const ProNotificationsPage({super.key});
 
@@ -46,6 +54,12 @@ class ProNotificationsPage extends StatefulWidget {
   State<ProNotificationsPage> createState() => _ProNotificationsPageState();
 }
 
+/// State de la page Notifications côté Pro.
+///
+/// - Gère le filtre actif `_filter`.
+/// - Initialise une liste mock `_items`.
+/// - Calcule les listes `unread`/`old`.
+/// - Assure la navigation au clic selon la catégorie.
 class _ProNotificationsPageState extends State<ProNotificationsPage> {
   _NotifCategory? _filter; // null => Tous
 
@@ -128,20 +142,16 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
 
     return Scaffold(
       appBar: AppBar(
+        // Bouton retour vers l'accueil Pro
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/pro/home'),
         ),
         centerTitle: false,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        iconTheme: const IconThemeData(color: Color(0xFF111827)),
-        actionsIconTheme: const IconThemeData(color: Color(0xFF111827)),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Notifications', style: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFF111827), fontWeight: FontWeight.w600)),
+            const Text('Notifications'),
             const SizedBox(width: 8),
             Container(
               width: 20,
@@ -167,24 +177,28 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
+                  // Segment: Tous
                   _SegmentChip(
                     label: 'Tous',
                     selected: _filter == null,
                     onTap: () => setState(() => _filter = null),
                   ),
                   const SizedBox(width: 8),
+                  // Segment: Demandes
                   _SegmentChip(
                     label: 'Demandes',
                     selected: _filter == _NotifCategory.demandes,
                     onTap: () => setState(() => _filter = _NotifCategory.demandes),
                   ),
                   const SizedBox(width: 8),
+                  // Segment: Propositions
                   _SegmentChip(
                     label: 'Propositions',
                     selected: _filter == _NotifCategory.propositions,
                     onTap: () => setState(() => _filter = _NotifCategory.propositions),
                   ),
                   const SizedBox(width: 8),
+                  // Segment: Messages
                   _SegmentChip(
                     label: 'Messages',
                     selected: _filter == _NotifCategory.messages,
@@ -215,6 +229,7 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
             ],
           ),
           const SizedBox(height: 12),
+          // Liste des notifications non lues
           ...filtered(unread).map((n) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _NotifCard(
@@ -226,11 +241,14 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
                   actionText: n.actionText,
                   actionColor: n.actionColor,
                   faded: n.faded,
+                  actionEnabled: !_isProposalRejected(n),
+                  onTap: () => _handleNotificationTap(n),
                 ),
               )),
           const SizedBox(height: 24),
           Text('Anciennes notifications', style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF374151), fontWeight: FontWeight.w600)),
           const SizedBox(height: 12),
+          // Liste des notifications anciennes
           ...filtered(old).map((n) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _NotifCard(
@@ -242,6 +260,8 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
                   actionText: n.actionText,
                   actionColor: n.actionColor,
                   faded: true,
+                  actionEnabled: !_isProposalRejected(n),
+                  onTap: () => _handleNotificationTap(n),
                 ),
               )),
         ],
@@ -249,8 +269,35 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
     );
   }
 
+  /// True si la notification correspond à une proposition rejetée,
+  /// ce qui désactive toute action.
+  bool _isProposalRejected(_NotifItem n) {
+    return n.category == _NotifCategory.propositions &&
+        (n.actionText.toLowerCase().contains('détail') || n.actionText.toLowerCase().contains('details'));
+  }
+
+  /// Gère la navigation au clic sur une notification selon sa catégorie.
+  void _handleNotificationTap(_NotifItem n) {
+    switch (n.category) {
+      case _NotifCategory.demandes:
+        context.go('/pro/service-requests');
+        break;
+      case _NotifCategory.propositions:
+        // Accepted proposal -> open discussion
+        if (n.actionText.toLowerCase().contains('discussion')) {
+          context.push('/pro/chat', extra: {'name': 'Client', 'initials': 'CL'});
+        }
+        // Rejetée: do nothing
+        break;
+      case _NotifCategory.messages:
+        // Open messages discussion
+        context.push('/pro/chat', extra: {'name': 'Contact', 'initials': 'CN'});
+        break;
+    }
+  }
 }
 
+/// Puce de segment (onglet horizontal) pour filtrer les notifications.
 class _SegmentChip extends StatelessWidget {
   const _SegmentChip({required this.label, required this.selected, this.onTap});
   final String label;
@@ -281,6 +328,10 @@ class _SegmentChip extends StatelessWidget {
     );
   }
 }
+/// Carte d'une notification.
+///
+/// - Supporte un état `faded` (ancien) qui atténue l'opacité.
+/// - Expose `onTap` et `actionEnabled` pour gérer l'action.
 class _NotifCard extends StatelessWidget {
   const _NotifCard({
     required this.borderColor,
@@ -291,6 +342,8 @@ class _NotifCard extends StatelessWidget {
     required this.actionText,
     required this.actionColor,
     this.faded = false,
+    this.onTap,
+    this.actionEnabled = true,
   });
 
   final Color borderColor;
@@ -301,19 +354,24 @@ class _NotifCard extends StatelessWidget {
   final String actionText;
   final Color actionColor;
   final bool faded;
+  final VoidCallback? onTap;
+  final bool actionEnabled;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: faded ? const Color(0xFFFFFFFF).withValues(alpha: 0.6) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 2),
-        boxShadow: const [BoxShadow(color: Color(0x1A000000), blurRadius: 2, offset: Offset(0, 1))],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: faded ? const Color(0xFFFFFFFF).withValues(alpha: 0.6) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: 2),
+          boxShadow: const [BoxShadow(color: Color(0x1A000000), blurRadius: 2, offset: Offset(0, 1))],
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title1, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500, color: const Color(0xFF111827))),
@@ -324,12 +382,14 @@ class _NotifCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(timeText, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
           const SizedBox(height: 12),
-          TextButton.icon(
-            onPressed: () {},
-            icon: Icon(Icons.arrow_outward_rounded, size: 16, color: actionColor),
-            label: Text(actionText, style: theme.textTheme.bodyMedium?.copyWith(color: actionColor, fontWeight: FontWeight.w500)),
-          )
+          if (actionEnabled)
+            TextButton.icon(
+              onPressed: onTap,
+              icon: Icon(Icons.arrow_outward_rounded, size: 16, color: actionColor),
+              label: Text(actionText, style: theme.textTheme.bodyMedium?.copyWith(color: actionColor, fontWeight: FontWeight.w500)),
+            )
         ],
+      ),
       ),
     );
   }

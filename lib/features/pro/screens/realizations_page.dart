@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 
+/// Page Pro: vos réalisations (galerie d'images mock).
+///
+/// - Grille d'images (assets) avec gestion d'erreur d'affichage.
+/// - Bouton flottant pour ajouter une réalisation (ouvre une bottom sheet).
 class ProRealizationsPage extends StatelessWidget {
   const ProRealizationsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    /// Liste mock des chemins d'images.
     final images = const [
       'assets/images/onboarding_1.png',
       'assets/images/onboarding_2.png',
@@ -20,17 +25,15 @@ class ProRealizationsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF111827)),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/pro/home'),
         ),
-        title: Text('Vos réalisations', style: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+        title: const Text('Vos réalisations'),
         centerTitle: false,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
       ),
       body: GridView.builder(
         padding: const EdgeInsets.all(16),
+        // Grille 2 colonnes, espacements et ratio configurés
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           mainAxisSpacing: 12,
@@ -48,6 +51,7 @@ class ProRealizationsPage extends StatelessWidget {
                 path,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stack) {
+                  // Placeholder en cas d'image manquante
                   return Container(
                     color: const Color(0xFFF5F5F5),
                     alignment: Alignment.center,
@@ -71,6 +75,7 @@ class ProRealizationsPage extends StatelessWidget {
     );
   }
 
+  /// Ouvre la feuille pour ajouter une nouvelle réalisation.
   void _openAddRealizationSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -84,6 +89,7 @@ class ProRealizationsPage extends StatelessWidget {
   }
 }
 
+/// Feuille (bottom sheet) pour ajouter une réalisation.
 class _AddRealizationSheet extends StatefulWidget {
   const _AddRealizationSheet();
 
@@ -92,10 +98,13 @@ class _AddRealizationSheet extends StatefulWidget {
 }
 
 class _AddRealizationSheetState extends State<_AddRealizationSheet> {
+  /// Champs contrôlés
   final _titleCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+  /// Fichiers sélectionnés (mock)
   final List<PlatformFile> _files = [];
+  /// Date de début (optionnelle)
   DateTime? _startDate;
 
   @override
@@ -106,6 +115,7 @@ class _AddRealizationSheetState extends State<_AddRealizationSheet> {
     super.dispose();
   }
 
+  /// Sélectionne des fichiers (mock)
   Future<void> _pickFiles() async {
     try {
       final res = await FilePicker.platform.pickFiles(allowMultiple: true);
@@ -114,6 +124,7 @@ class _AddRealizationSheetState extends State<_AddRealizationSheet> {
     } catch (_) {}
   }
 
+  /// Ouvre un sélecteur de date.
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -125,6 +136,7 @@ class _AddRealizationSheetState extends State<_AddRealizationSheet> {
     if (picked != null) setState(() => _startDate = picked);
   }
 
+  /// Vérifie les champs obligatoires et soumet (mock).
   void _submit() {
     if (_titleCtrl.text.trim().isEmpty || _locationCtrl.text.trim().isEmpty || _descCtrl.text.trim().isEmpty || _files.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez remplir tous les champs obligatoires')));
@@ -229,6 +241,7 @@ class _AddRealizationSheetState extends State<_AddRealizationSheet> {
     );
   }
 
+  /// Décoration standard pour les champs de saisie.
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,

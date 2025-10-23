@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 
+/// Page Pro: création d'une proposition.
+///
+/// - Résumé du projet en haut (mock).
+/// - Formulaire titre + détail.
+/// - Ajout de documents (mock, via FilePicker).
+/// - Bouton d'envoi simulé.
 class ProProposalCreatePage extends StatefulWidget {
   const ProProposalCreatePage({super.key});
 
@@ -10,8 +16,11 @@ class ProProposalCreatePage extends StatefulWidget {
 }
 
 class _ProProposalCreatePageState extends State<ProProposalCreatePage> {
+  /// Champ titre de la proposition.
   final _titleCtrl = TextEditingController();
+  /// Champ détail de la proposition.
   final _detailCtrl = TextEditingController();
+  /// Fichiers joints sélectionnés (mock).
   final List<PlatformFile> _files = [];
 
   @override
@@ -21,6 +30,7 @@ class _ProProposalCreatePageState extends State<ProProposalCreatePage> {
     super.dispose();
   }
 
+  /// Ouvre le sélecteur de fichiers et ajoute les éléments sélectionnés.
   Future<void> _pickFiles() async {
     try {
       final res = await FilePicker.platform.pickFiles(allowMultiple: true);
@@ -33,6 +43,7 @@ class _ProProposalCreatePageState extends State<ProProposalCreatePage> {
     }
   }
 
+  /// Soumet la proposition (mock) et revient en arrière.
   void _send() {
     // Mock submit
     ScaffoldMessenger.of(context).showSnackBar(
@@ -48,14 +59,12 @@ class _ProProposalCreatePageState extends State<ProProposalCreatePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0.5,
+        // Retour arrière
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF111827)),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: Text('Détails du projet', style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF0F172A), fontWeight: FontWeight.w500)),
+        title: const Text('Détails du projet'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -63,7 +72,7 @@ class _ProProposalCreatePageState extends State<ProProposalCreatePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Project summary (mock)
+            // Résumé du projet (mock)
             Container(
               decoration: const BoxDecoration(color: Colors.white),
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -75,7 +84,7 @@ class _ProProposalCreatePageState extends State<ProProposalCreatePage> {
                   Row(children: const [
                     Icon(Icons.place_outlined, size: 18, color: Color(0xFF0F172A)),
                     SizedBox(width: 8),
-                    Expanded(child: Text('Bamako, Lafiabougou', style: TextStyle(color: Color(0xFF4B5563))))
+                    Expanded(child: Text('Bamako, Lafiabougou', style: TextStyle(color: Color(0xFF4B5563))) )
                   ]),
                   const SizedBox(height: 8),
                   Row(children: const [

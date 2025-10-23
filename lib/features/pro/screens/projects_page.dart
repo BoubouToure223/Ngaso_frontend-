@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Page Pro: liste des projets disponibles.
+///
+/// - Recherche de projets par titre, localisation ou auteur.
+/// - Liste paginée (mock) avec carte projet et action "Faire une proposition".
 class ProProjectsPage extends StatefulWidget {
   const ProProjectsPage({super.key});
 
@@ -9,8 +13,10 @@ class ProProjectsPage extends StatefulWidget {
 }
 
 class _ProProjectsPageState extends State<ProProjectsPage> {
+  /// Contrôleur de recherche.
   final TextEditingController _searchCtrl = TextEditingController();
 
+  /// Données mock de projets.
   final List<_ProjectItem> _items = const [
     _ProjectItem(
       title: 'Construction de Batiment',
@@ -43,22 +49,19 @@ class _ProProjectsPageState extends State<ProProjectsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFFCFAF7),
       appBar: AppBar(
+        // Retour accueil Pro
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF111827)),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/pro/home'),
         ),
-        title: Text('Projets', style: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+        title: const Text('Projets'),
         centerTitle: false,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        iconTheme: const IconThemeData(color: Color(0xFF111827)),
-        foregroundColor: const Color(0xFF111827),
-        elevation: 0,
       ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
         child: Column(
           children: [
+            // Barre de recherche + bouton Filtrer (placeholder)
             Row(
               children: [
                 Expanded(
@@ -98,6 +101,7 @@ class _ProProjectsPageState extends State<ProProjectsPage> {
             ),
             const SizedBox(height: 16),
             if (items.isEmpty)
+              // État vide
               const Expanded(
                 child: _EmptyState(
                   emoji: '📂',
@@ -106,6 +110,7 @@ class _ProProjectsPageState extends State<ProProjectsPage> {
                 ),
               )
             else
+              // Liste des projets
               Expanded(
                 child: ListView.separated(
                   itemCount: items.length,
@@ -122,6 +127,7 @@ class _ProProjectsPageState extends State<ProProjectsPage> {
     );
   }
 
+  /// Filtre les projets en fonction de la requête [q].
   List<_ProjectItem> _filtered(List<_ProjectItem> all, String q) {
     if (q.trim().isEmpty) return all;
     final lq = q.toLowerCase();
@@ -131,6 +137,7 @@ class _ProProjectsPageState extends State<ProProjectsPage> {
   }
 }
 
+/// Carte projet avec titre, localisation, budget, date et CTA.
 class _ProjectCard extends StatelessWidget {
   const _ProjectCard({required this.item});
   final _ProjectItem item;
@@ -151,8 +158,10 @@ class _ProjectCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Titre
               Text(item.title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF0F172A))),
               const SizedBox(height: 8),
+              // Localisation
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -162,6 +171,7 @@ class _ProjectCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
+              // Budget + date
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -176,6 +186,7 @@ class _ProjectCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
+              // CTA: faire une proposition
               SizedBox(
                 height: 50,
                 width: double.infinity,
@@ -190,6 +201,7 @@ class _ProjectCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
+              // Auteur du projet
               Row(
                 children: [
                   const Icon(Icons.badge_outlined, size: 16, color: Color(0xFF0F172A)),
@@ -205,6 +217,7 @@ class _ProjectCard extends StatelessWidget {
   }
 }
 
+/// Modèle léger pour un projet.
 class _ProjectItem {
   const _ProjectItem({required this.title, required this.location, required this.budget, required this.dateText, required this.author});
   final String title;
@@ -214,6 +227,7 @@ class _ProjectItem {
   final String author;
 }
 
+/// Composant d'état vide générique.
 class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.emoji, required this.title, required this.subtitle});
   final String emoji;
