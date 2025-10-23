@@ -21,7 +21,7 @@ class ProRealizationsPage extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF111827)),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go('/app/home'),
         ),
         title: Text('Vos réalisations', style: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
         centerTitle: false,
