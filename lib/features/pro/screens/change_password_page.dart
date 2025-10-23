@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Page Pro: modification du mot de passe.
+///
+/// Cette page présente un formulaire simple (mot de passe actuel,
+/// nouveau mot de passe, confirmation) avec une soumission mock.
 class ProChangePasswordPage extends StatefulWidget {
   const ProChangePasswordPage({super.key});
 
@@ -22,6 +26,11 @@ class _ProChangePasswordPageState extends State<ProChangePasswordPage> {
     super.dispose();
   }
 
+  /// Soumission mock du formulaire.
+  ///
+  /// - Valide les champs.
+  /// - Simule un délai réseau.
+  /// - Affiche des SnackBars de feedback.
   void _submit() async {
     final current = _currentCtrl.text.trim();
     final next = _newCtrl.text.trim();
@@ -51,15 +60,12 @@ class _ProChangePasswordPageState extends State<ProChangePasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // Structure générale: AppBar minimaliste + contenu scrollable.
     return Scaffold(
       backgroundColor: const Color(0xFFFCFAF7),
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFFFCFAF7),
-        surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF111827)),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/pro/profil'),
         ),
         centerTitle: true,
@@ -75,7 +81,7 @@ class _ProChangePasswordPageState extends State<ProChangePasswordPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Header block
+                    // Bloc d'en-tête: icône, titre en deux lignes
                     const SizedBox(height: 24),
                     Container(
                       width: 48,
@@ -123,6 +129,7 @@ class _ProChangePasswordPageState extends State<ProChangePasswordPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          // Champs du formulaire (actuel / nouveau / confirmation)
                           _LabeledField(
                             label: 'Entrez votre mot de passe',
                             controller: _currentCtrl,
@@ -177,6 +184,7 @@ class _ProChangePasswordPageState extends State<ProChangePasswordPage> {
   }
 }
 
+/// Champ texte avec libellé utilisé dans le formulaire de changement de mot de passe.
 class _LabeledField extends StatelessWidget {
   const _LabeledField({required this.label, required this.controller, this.obscure = false});
   final String label;
@@ -185,6 +193,7 @@ class _LabeledField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Hauteur fixe pour correspondre au design des champs.
     return SizedBox(
       height: 50,
       child: TextField(

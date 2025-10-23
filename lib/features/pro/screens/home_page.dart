@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Page d'accueil (Espace Pro).
+///
+/// - En-tête fixe avec logo et bouton notifications.
+/// - Cartes KPI cliquables (propositions, demandes, messages).
+/// - Liste de projets disponibles (accès rapide à la création de proposition).
+/// - Section "Vos réalisations" avec galerie horizontale.
 class ProHomePage extends StatelessWidget {
   const ProHomePage({super.key});
 
@@ -12,16 +18,16 @@ class ProHomePage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Fixed header
+            // En-tête fixe: logo + notifications et message d'accueil
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Top bar: app logo (left) and notification (right)
+                  // Barre du haut: logo à gauche et notifications à droite
                   Row(
                     children: [
-                      // App logo placeholder
+                      // Placeholder du logo de l'app
                       Container(
                         width: 40,
                         height: 40,
@@ -59,7 +65,7 @@ class ProHomePage extends StatelessWidget {
                 ],
               ),
             ),
-            // Scrollable content
+            // Contenu scrollable: KPI, projets, réalisations
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
@@ -67,7 +73,7 @@ class ProHomePage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 8),
-                    // KPI Cards
+                    // Cartes KPI (Propositions / Demandes)
                     Row(
                       children: [
                         Expanded(
@@ -87,11 +93,18 @@ class ProHomePage extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _StatCard(
-                            emoji: '🧾',
-                            title: 'Demande de service',
-                            value: '3',
-                            subtitle: 'Envoyés',
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () => context.go('/pro/service-requests'),
+                              child: _StatCard(
+                                emoji: '🧾',
+                                title: 'Demande de service',
+                                value: '3',
+                                subtitle: 'Envoyés',
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -119,7 +132,7 @@ class ProHomePage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    // Projets disponibles header
+                    // En-tête section: Projets disponibles
                     Row(
                       children: [
                         Expanded(
@@ -139,7 +152,7 @@ class ProHomePage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Project cards
+                    // Cartes projet (accès rapide)
                     _ProjectCard(
                       title: 'Construction de Bâtiment',
                       location: 'ACI 2000',
@@ -170,7 +183,7 @@ class ProHomePage extends StatelessWidget {
                       primary: const Color(0xFF3F51B5),
                     ),
                     const SizedBox(height: 20),
-                    // Réalisations
+                    // En-tête section: Vos réalisations
                     Row(
                       children: [
                         Expanded(
@@ -236,6 +249,9 @@ class ProHomePage extends StatelessWidget {
   }
 }
 
+/// Carte KPI (statistique) avec émoji, titre, valeur et sous-titre.
+///
+/// Utilisée pour afficher des statistiques clés sur la page d'accueil.
 class _StatCard extends StatelessWidget {
   const _StatCard({required this.emoji, required this.title, required this.value, required this.subtitle});
   final String emoji;
@@ -300,6 +316,9 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+/// Carte projet compacte pour l'accueil Pro (tap -> action, CTA -> proposer).
+///
+/// Utilisée pour afficher les projets disponibles sur la page d'accueil.
 class _ProjectCard extends StatelessWidget {
   const _ProjectCard({
     required this.title,

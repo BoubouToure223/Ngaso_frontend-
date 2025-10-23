@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 
+/// Page de discussion (chat) côté Pro.
+///
+/// - Affiche une conversation simulée avec une zone de saisie.
+/// - Permet d'envoyer des messages texte et de joindre un fichier (mock).
 class ProChatPage extends StatefulWidget {
   const ProChatPage({super.key, this.name, this.initials});
+  /// Nom du contact (affiché dans l'AppBar).
   final String? name;
+  /// Initiales du contact (affichées dans l'avatar).
   final String? initials;
 
   @override
@@ -12,9 +18,12 @@ class ProChatPage extends StatefulWidget {
 }
 
 class _ProChatPageState extends State<ProChatPage> {
+  /// Contrôleur du champ de saisie.
   final _controller = TextEditingController();
+  /// Contrôleur du défilement de la liste des messages.
   final _scrollCtrl = ScrollController();
 
+  /// Messages simulés (mock) de la conversation.
   late final List<_Msg> _messages = <_Msg>[
     _Msg(text: "Bonjour M. Traoré, je suis intéressé par votre devis pour la rénovation de ma cuisine.", me: false, time: '10:03'),
     _Msg(text: "Bonjour. Merci pour votre intérêt. Je peux vous proposer un rendez-vous pour discuter des détails?", me: true, time: '10:05'),
@@ -31,6 +40,7 @@ class _ProChatPageState extends State<ProChatPage> {
     super.dispose();
   }
 
+  /// Action: joindre un fichier (mock) puis scroller en bas.
   Future<void> _attach() async {
     try {
       final res = await FilePicker.platform.pickFiles(allowMultiple: false);
@@ -57,6 +67,7 @@ class _ProChatPageState extends State<ProChatPage> {
     }
   }
 
+  /// Action: envoyer le contenu du champ de saisie comme message.
   void _send() {
     final txt = _controller.text.trim();
     if (txt.isEmpty) return;
@@ -87,10 +98,12 @@ class _ProChatPageState extends State<ProChatPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFFCFAF7),
       appBar: AppBar(
+        // Retour arrière
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF111827)),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
+        // En-tête: avatar + nom du contact
         title: Row(
           children: [
             CircleAvatar(
@@ -99,16 +112,14 @@ class _ProChatPageState extends State<ProChatPage> {
               child: Text(contactInitials, style: const TextStyle(fontSize: 12, color: Color(0xFF3F51B5), fontWeight: FontWeight.w600)),
             ),
             const SizedBox(width: 8),
-            Text(contactName, style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF1F2937), fontWeight: FontWeight.w600)),
+            Text(contactName),
           ],
         ),
         centerTitle: false,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
       ),
       body: Column(
         children: [
+          // Liste des messages (bulle à gauche/droite selon l'émetteur)
           Expanded(
             child: ListView.builder(
               controller: _scrollCtrl,
@@ -120,6 +131,7 @@ class _ProChatPageState extends State<ProChatPage> {
               },
             ),
           ),
+          // Barre d'entrée (joindre un fichier + champ + envoyer)
           Container(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
             color: Colors.white,
@@ -176,6 +188,7 @@ class _ProChatPageState extends State<ProChatPage> {
   }
 }
 
+/// Bulle de message (gauche/droite selon l'émetteur).
 class _Bubble extends StatelessWidget {
   const _Bubble({required this.msg});
   final _Msg msg;
@@ -208,9 +221,13 @@ class _Bubble extends StatelessWidget {
   }
 }
 
+/// Modèle d'un message dans la conversation.
 class _Msg {
   const _Msg({required this.text, required this.me, required this.time});
+  /// Contenu textuel du message.
   final String text;
+  /// True si le message a été envoyé par le pro (moi).
   final bool me;
+  /// Heure d'envoi formatée (HH:mm).
   final String time;
 }

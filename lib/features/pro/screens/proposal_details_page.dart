@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Page listant les propositions envoyées par le professionnel avec
+/// filtres (Toutes, En attente, Validées, Rejetées) et actions contextuelles.
+///
+/// Cette page utilise un modèle simple en mémoire pour illustrer
+/// la logique d'UI et les interactions (sans persistance).
 // Filtre possible pour les propositions
 enum _ProposalStatus { all, pending, validated, rejected }
 
+/// Entrée de route pour la page de détails des propositions (Pro).
 class ProProposalDetailsPage extends StatefulWidget {
   const ProProposalDetailsPage({super.key});
 
@@ -11,6 +17,12 @@ class ProProposalDetailsPage extends StatefulWidget {
   State<ProProposalDetailsPage> createState() => _ProProposalDetailsPageState();
 }
 
+/// State principal gérant:
+/// - La palette de couleurs (cohérente avec Notifications)
+/// - Les données mock de propositions `_items`
+/// - Le filtre actif `_filter`
+/// - Le rendu des cartes via `_buildCardFromItem`
+/// - Les actions "Modifier" et "Annuler"
 class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
   // Palette alignée avec Notifications
   Color get blue => const Color(0xFF2563EB);
@@ -42,7 +54,6 @@ class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
       author: 'Boubou Touré',
       description: 'Plan',
       sentDate: '8 juin 2023',
-      rejectReasons: const ['Budget trop', 'élevé par', 'rapport aux', 'autres devis', 'reçus.'],
     ),
   ];
 
@@ -65,20 +76,17 @@ class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
 
     return Scaffold(
       appBar: AppBar(
+        // Bouton retour vers l'accueil Pro
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/pro/home'),
         ),
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF111827)),
-        title: Text('Proposition', style: theme.textTheme.titleLarge?.copyWith(color: slate, fontWeight: FontWeight.w600)),
+        title: const Text('Proposition'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // HEADER FILTRES (optimisé + commenté)
+          // HEADER FILTRES
           // - 4 boutons: Toutes, attente, Validées, Rejetées
           // - Affiche les compteurs avec couleurs cohérentes
           Container(
@@ -91,7 +99,7 @@ class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                // Bouton: Toutes
+                // Bouton: Toutes (souligne si actif)
                 _FilterTab(
                   active: _filter == _ProposalStatus.all,
                   label: 'Toutes',
@@ -99,7 +107,7 @@ class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
                   activeColor: blue,
                   onTap: () => setState(() => _filter = _ProposalStatus.all),
                 ),
-                // Bouton: attente
+                // Bouton: En attente (avec badge)
                 _StatusPill(
                   active: _filter == _ProposalStatus.pending,
                   dotColor: const Color(0xFFFACC15),
@@ -137,7 +145,7 @@ class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
 
           const SizedBox(height: 16),
 
-          // Liste des cartes selon filtre
+          // LISTE: rend chaque proposition via une carte selon son statut
           for (final it in visible) ...[
             _buildCardFromItem(it, theme),
             const SizedBox(height: 10),
@@ -152,6 +160,7 @@ class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
     switch (it.status) {
       case _ProposalStatus.pending:
         return _ProposalCard(
+          // Bande latérale jaune + pastille "En attente"
           borderColor: yellow,
           statusBg: const Color(0xFFFEF9C3),
           statusTextColor: const Color(0xFF854D0E),
@@ -160,17 +169,19 @@ class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
           description: it.description,
           sentDate: it.sentDate,
           leadingIcon: Icons.schedule,
-          actionLeftLabel: 'Modifier',
+          // Actions contextuelles
+          actionLeftLabel: 'Modifier', // simple notification (mock)
           actionLeftBorderColor: const Color(0xFFD1D5DB),
           actionLeftTextColor: slate,
-          actionRightLabel: 'Annuler',
+          actionRightLabel: 'Annuler', // demande confirmation puis supprime
           actionRightBorderColor: red,
           actionRightTextColor: const Color(0xFFDC2626),
-          primaryButtonLabel: 'Détails',
-          primaryButtonColor: blue,
+          actionLeftOnPressed: () => _onModify(it),
+          actionRightOnPressed: () => _onCancel(it),
         );
       case _ProposalStatus.validated:
         return _ProposalCard(
+          // Bande latérale verte + statut "Validée"
           borderColor: green,
           statusBg: const Color(0xFFDCFCE7),
           statusTextColor: const Color(0xFF166534),
@@ -179,16 +190,16 @@ class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
           description: it.description,
           sentDate: it.sentDate,
           leadingIcon: Icons.check_circle_outline,
+          // Pilule primaire (ex: accès messagerie)
           primaryPillIcon: Icons.image_outlined,
           primaryPillLabel: 'Messagerie',
           statusLabel: 'Validée',
           primaryPillBg: const Color(0xFFDBEAFE),
           primaryPillTextColor: blue,
-          primaryButtonLabel: 'Détails',
-          primaryButtonColor: blue,
         );
       case _ProposalStatus.rejected:
         return _ProposalCard(
+          // Bande latérale rouge + statut "Rejetée"
           borderColor: red,
           title: it.title,
           author: it.author,
@@ -198,33 +209,77 @@ class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
           statusBg: const Color(0xFFFEE2E2),
           statusTextColor: const Color(0xFF991B1B),
           statusLabel: 'Rejetée',
-          primaryButtonLabel: 'Détails',
-          primaryButtonColor: blue,
-          rejectReasons: it.rejectReasons,
         );
       case _ProposalStatus.all:
         // non utilisé directement
         return const SizedBox.shrink();
     }
   }
+
+  /// Action: affiche un simple SnackBar pour simuler une modification.
+  void _onModify(_Item it) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Modification de "${it.title}"')),
+    );
+  }
+
+  /// Action: demande confirmation, puis supprime la proposition de la liste.
+  Future<void> _onCancel(_Item it) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Annuler la proposition'),
+        content: const Text('Confirmez-vous l\'annulation ?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Non')),
+          TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Oui')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    final idx = _items.indexOf(it);
+    if (idx == -1) return;
+    setState(() {
+      _items.removeAt(idx);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Proposition "${it.title}" supprimée')),
+    );
+  }
 }
 
 // Modèle de données minimal pour la liste
 class _Item {
+  /// Représente une proposition envoyée.
   const _Item({
-    required this.status,
-    required this.title,
-    required this.author,
-    required this.description,
-    required this.sentDate,
-    this.rejectReasons,
+    required this.status, // Statut courant
+    required this.title, // Titre du projet
+    required this.author, // Auteur/Client
+    required this.description, // Brève description
+    required this.sentDate, // Date d'envoi
   });
   final _ProposalStatus status;
   final String title;
   final String author;
   final String description;
   final String sentDate;
-  final List<String>? rejectReasons;
+
+  /// Crée une copie avec modifications partielles.
+  _Item copyWith({
+    _ProposalStatus? status,
+    String? title,
+    String? author,
+    String? description,
+    String? sentDate,
+  }) {
+    return _Item(
+      status: status ?? this.status,
+      title: title ?? this.title,
+      author: author ?? this.author,
+      description: description ?? this.description,
+      sentDate: sentDate ?? this.sentDate,
+    );
+  }
 }
 
 // Bouton filtre "Toutes" avec soulignement actif et badge compteur
@@ -370,9 +425,10 @@ class _ProposalCard extends StatelessWidget {
     this.primaryPillLabel,
     this.primaryPillBg,
     this.primaryPillTextColor,
-    required this.primaryButtonLabel,
-    required this.primaryButtonColor,
-    this.rejectReasons,
+    this.primaryButtonLabel,
+    this.primaryButtonColor,
+    this.actionLeftOnPressed,
+    this.actionRightOnPressed,
   });
 
   final Color borderColor;
@@ -394,9 +450,10 @@ class _ProposalCard extends StatelessWidget {
   final String? primaryPillLabel;
   final Color? primaryPillBg;
   final Color? primaryPillTextColor;
-  final String primaryButtonLabel;
-  final Color primaryButtonColor;
-  final List<String>? rejectReasons;
+  final String? primaryButtonLabel;
+  final Color? primaryButtonColor;
+  final VoidCallback? actionLeftOnPressed;
+  final VoidCallback? actionRightOnPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -411,7 +468,7 @@ class _ProposalCard extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // Left colored strip
+            // Left colored strip (indique le statut par couleur)
             Align(
               alignment: Alignment.centerLeft,
               child: Container(width: 4, color: borderColor),
@@ -420,124 +477,114 @@ class _ProposalCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
               child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF0F172A), fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 2),
-                    Text(author, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF6B7280))),
-                  ],
-                ),
-              ),
-              if (statusBg != null)
-                Container(
-                  height: 24,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(9999)),
-                  alignment: Alignment.center,
-                  child: Text(statusLabel ?? 'En attente', style: theme.textTheme.bodySmall?.copyWith(color: statusTextColor ?? const Color(0xFF854D0E), fontWeight: FontWeight.w500)),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(description, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF0F172A), fontWeight: FontWeight.w500)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(leadingIcon, size: 14, color: const Color(0xFF0F172A)),
-              const SizedBox(width: 6),
-              Text('Envoyée le', style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
-              const SizedBox(width: 6),
-              Text(sentDate, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
-            ],
-          ),
-          if (rejectReasons != null) ...[
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.info_outline, size: 14, color: Color(0xFF0F172A)),
-                const SizedBox(width: 6),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: rejectReasons!
-                      .map((t) => Text(t, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFFDC2626))))
-                      .toList(),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              if (actionLeftLabel != null)
-                SizedBox(
-                  height: 30,
-                  child: OutlinedButton(
-                    onPressed: () {},
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: actionLeftTextColor,
-                      side: BorderSide(color: actionLeftBorderColor ?? const Color(0xFFD1D5DB)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                    child: Text(actionLeftLabel!),
-                  ),
-                ),
-              if (actionRightLabel != null) ...[
-                const SizedBox(width: 8),
-                SizedBox(
-                  height: 30,
-                  child: OutlinedButton(
-                    onPressed: () {},
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: actionRightTextColor,
-                      side: BorderSide(color: actionRightBorderColor ?? const Color(0xFFD1D5DB)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                    child: Text(actionRightLabel!),
-                  ),
-                ),
-              ],
-              const Spacer(),
-              if (primaryPillLabel != null)
-                Container(
-                  height: 28,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(color: primaryPillBg, borderRadius: BorderRadius.circular(6)),
-                  child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // En-tête: titre + auteur + pastille de statut si présente
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (primaryPillIcon != null) ...[
-                        Icon(primaryPillIcon, size: 14, color: primaryPillTextColor ?? const Color(0xFF1D4ED8)),
-                        const SizedBox(width: 4),
-                      ],
-                      Text(primaryPillLabel!, style: theme.textTheme.bodySmall?.copyWith(color: primaryPillTextColor ?? const Color(0xFF1D4ED8))),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(title, style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF0F172A), fontWeight: FontWeight.w500)),
+                            const SizedBox(height: 2),
+                            Text(author, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF6B7280))),
+                          ],
+                        ),
+                      ),
+                      if (statusBg != null)
+                        Container(
+                          height: 24,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(9999)),
+                          alignment: Alignment.center,
+                          child: Text(statusLabel ?? 'En attente', style: theme.textTheme.bodySmall?.copyWith(color: statusTextColor ?? const Color(0xFF854D0E), fontWeight: FontWeight.w500)),
+                        ),
                     ],
                   ),
-                ),
-              const SizedBox(width: 8),
-              SizedBox(
-                height: 28,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryButtonColor,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  const SizedBox(height: 12),
+                  // Description courte
+                  Text(description, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF0F172A), fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 12),
+                  // Lignes d'infos (icône + libellé + date d'envoi)
+                  Row(
+                    children: [
+                      Icon(leadingIcon, size: 14, color: const Color(0xFF0F172A)),
+                      const SizedBox(width: 6),
+                      Text('Envoyée le', style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                      const SizedBox(width: 6),
+                      Text(sentDate, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                    ],
                   ),
-                  child: Text(primaryButtonLabel, style: theme.textTheme.bodySmall?.copyWith(color: Colors.white)),
-                ),
-              ),
-            ],
-          ),
-        ],
+                  const SizedBox(height: 16),
+                  // Barre d'actions: gauche (Modifier), droite (Annuler), puis pilule et bouton optionnel
+                  Row(
+                    children: [
+                      if (actionLeftLabel != null)
+                        SizedBox(
+                          height: 30,
+                          child: OutlinedButton(
+                            onPressed: actionLeftOnPressed,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: actionLeftTextColor,
+                              side: BorderSide(color: actionLeftBorderColor ?? const Color(0xFFD1D5DB)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                            ),
+                            child: Text(actionLeftLabel!),
+                          ),
+                        ),
+                      if (actionRightLabel != null) ...[
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          height: 30,
+                          child: OutlinedButton(
+                            onPressed: actionRightOnPressed,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: actionRightTextColor,
+                              side: BorderSide(color: actionRightBorderColor ?? const Color(0xFFD1D5DB)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                            ),
+                            child: Text(actionRightLabel!),
+                          ),
+                        ),
+                      ],
+                      const Spacer(),
+                      if (primaryPillLabel != null)
+                        Container(
+                          height: 28,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(color: primaryPillBg, borderRadius: BorderRadius.circular(6)),
+                          child: Row(
+                            children: [
+                              if (primaryPillIcon != null) ...[
+                                Icon(primaryPillIcon, size: 14, color: primaryPillTextColor ?? const Color(0xFF1D4ED8)),
+                                const SizedBox(width: 4),
+                              ],
+                              Text(primaryPillLabel!, style: theme.textTheme.bodySmall?.copyWith(color: primaryPillTextColor ?? const Color(0xFF1D4ED8))),
+                            ],
+                          ),
+                        ),
+                      if (primaryButtonLabel != null && primaryButtonColor != null) ...[
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          height: 28,
+                          child: ElevatedButton(
+                            onPressed: () {},
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryButtonColor,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                            ),
+                            child: Text(primaryButtonLabel!, style: theme.textTheme.bodySmall?.copyWith(color: Colors.white)),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
               ),
             ),
           ],

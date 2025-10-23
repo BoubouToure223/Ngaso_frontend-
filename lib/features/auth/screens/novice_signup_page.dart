@@ -200,7 +200,7 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
                           height: 48,
                           child: ElevatedButton(
                             onPressed: () {
-                              // TODO: Implémenter la logique de création de compte.
+                              //Implémenter la logique de création de compte.
                             },
                             child: const Text('Créer mon compte'),
                           ),

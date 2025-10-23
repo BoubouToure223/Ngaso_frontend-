@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Page Pro: profil utilisateur (affichage et actions rapides).
+///
+/// - Affiche les informations personnelles.
+/// - Accès à la modification du profil via une bottom sheet.
+/// - Accès au changement de mot de passe et à la déconnexion.
 class ProProfilePage extends StatelessWidget {
   const ProProfilePage({super.key});
 
@@ -26,6 +31,7 @@ class ProProfilePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // Avatar avec initiales
               // Avatar initials
               Stack(
                 clipBehavior: Clip.none,
@@ -44,6 +50,7 @@ class ProProfilePage extends StatelessWidget {
               const SizedBox(height: 4),
               Text('Professionnel - Entrepreneur', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF6B7280))),
               const SizedBox(height: 12),
+              // Bouton: modifier le profil (ouvre une bottom sheet)
               // Edit profile
               SizedBox(
                 height: 40,
@@ -59,6 +66,7 @@ class ProProfilePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
+              // Carte: informations personnelles
               // Personal info card
               Container(
                 decoration: BoxDecoration(
@@ -98,6 +106,7 @@ class ProProfilePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
+              // Bouton: changer de mot de passe
               // Change password button
               SizedBox(
                 width: double.infinity,
@@ -114,6 +123,7 @@ class ProProfilePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              // Bouton: déconnexion
               // deconnexion  button
               SizedBox(
                 width: double.infinity,
@@ -145,6 +155,7 @@ class _EditProfileSheet extends StatefulWidget {
 }
 
 class _EditProfileSheetState extends State<_EditProfileSheet> {
+  /// Champs contrôlés pour l'édition du profil.
   final _nameCtrl = TextEditingController(text: 'Moussa Traoré');
   final _roleCtrl = TextEditingController(text: 'Professionnel - Entrepreneur');
   final _emailCtrl = TextEditingController(text: 'moussa.traore@ngaso.com');
@@ -163,6 +174,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   }
 
   void _save() async {
+    // Validation simple des champs puis simulation d'un enregistrement.
     if (_nameCtrl.text.trim().isEmpty ||
         _roleCtrl.text.trim().isEmpty ||
         _emailCtrl.text.trim().isEmpty ||
@@ -244,6 +256,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   }
 
   Widget _textField(TextEditingController ctrl, String hint, {TextInputType? keyboard}) {
+    // TextField utilitaire pour les champs de la feuille d'édition.
     return TextField(
       controller: ctrl,
       keyboardType: keyboard,
@@ -296,6 +309,7 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Ligne d'information libellé/valeur avec icône circulaire.
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
