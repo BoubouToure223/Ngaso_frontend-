@@ -67,7 +67,7 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF111827)),
-          onPressed: () => context.go('/app/home'),
+          onPressed: () => context.go('/pro/home'),
         ),
         title: Text('Messages 💬', style: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
         centerTitle: false,
@@ -167,7 +167,7 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
         conv.unread = 0;
       });
     }
-    await context.push('/app/chat', extra: {'name': conv.name, 'initials': conv.initials});
+    await context.push('/pro/chat', extra: {'name': conv.name, 'initials': conv.initials});
     setState(() {});
   }
 }

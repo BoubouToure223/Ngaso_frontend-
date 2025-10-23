@@ -17,6 +17,8 @@ import 'package:myapp/features/pro/screens/notifications_page.dart';
 import 'package:myapp/features/pro/screens/proposal_details_page.dart';
 import 'package:myapp/features/pro/screens/chat_page.dart';
 import 'package:myapp/features/pro/screens/proposal_create_page.dart';
+import 'package:myapp/features/pro/screens/realizations_page.dart';
+import 'package:myapp/features/pro/screens/change_password_page.dart';
 import 'package:myapp/features/novice/screens/home_page.dart';
 import 'package:myapp/features/novice/screens/messages_page.dart';
 import 'package:myapp/features/novice/screens/projects_page.dart';
@@ -78,58 +80,70 @@ final GoRouter router = GoRouter(
     ShellRoute(
       builder: (BuildContext context, GoRouterState state, Widget child) {
         const noviceTabs = [
-          NavTab('/app/home', 'Accueil', Icons.home_outlined),
-          NavTab('/app/messages', 'Messages', Icons.chat_bubble_outline),
-          NavTab('/app/projet', 'Projet', Icons.topic_outlined),
-          NavTab('/app/profil', 'Profile', Icons.person_outline),
+          NavTab('/pro/home', 'Accueil', Icons.home_outlined),
+          NavTab('/pro/messages', 'Messages', Icons.chat_bubble_outline),
+          NavTab('/pro/projet', 'Projet', Icons.topic_outlined),
+          NavTab('/pro/profil', 'Profile', Icons.person_outline),
         ];
         return AppShell(tabs: noviceTabs, child: child);
       },
       routes: <RouteBase>[
         GoRoute(
-          path: '/app/home',
+          path: '/pro/home',
           builder: (BuildContext context, GoRouterState state) {
             return const ProHomePage();
           },
         ),
         GoRoute(
-          path: '/app/messages',
+          path: '/pro/messages',
           builder: (BuildContext context, GoRouterState state) {
             return const ProMessagesPage();
           },
         ),
         GoRoute(
-          path: '/app/projet',
+          path: '/pro/projet',
           builder: (BuildContext context, GoRouterState state) {
             return const ProProjectsPage();
           },
         ),
         GoRoute(
-          path: '/app/profil',
+          path: '/pro/profil',
           builder: (BuildContext context, GoRouterState state) {
             return const ProProfilePage();
           },
         ),
         GoRoute(
-          path: '/app/notifications',
+          path: '/pro/notifications',
           builder: (BuildContext context, GoRouterState state) {
             return const ProNotificationsPage();
           },
         ),
         GoRoute(
-          path: '/app/proposition-details',
+          path: '/pro/proposition-details',
           builder: (BuildContext context, GoRouterState state) {
             return const ProProposalDetailsPage();
           },
         ),
         GoRoute(
-          path: '/app/proposition-create',
+          path: '/pro/proposition-create',
           builder: (BuildContext context, GoRouterState state) {
             return const ProProposalCreatePage();
           },
         ),
         GoRoute(
-          path: '/app/chat',
+          path: '/pro/realizations',
+          builder: (BuildContext context, GoRouterState state) {
+            return const ProRealizationsPage();
+          },
+        ),
+        GoRoute(
+          path: '/pro/change-password',
+          builder: (BuildContext context, GoRouterState state) {
+            return const ProChangePasswordPage();
+          },
+        ),
+        GoRoute(
+          path: '/pro/chat',
           builder: (BuildContext context, GoRouterState state) {
             final extra = state.extra;
             String? name;
@@ -147,34 +161,34 @@ final GoRouter router = GoRouter(
     ShellRoute(
       builder: (BuildContext context, GoRouterState state, Widget child) {
         const proTabs = [
-          NavTab('/pro/home', 'Accueil', Icons.home_outlined),
-          NavTab('/pro/messages', 'Messages', Icons.chat_bubble_outline),
-          NavTab('/pro/projet', 'Projet', Icons.topic_outlined),
-          NavTab('/pro/profil', 'Profile', Icons.person_outline),
+          NavTab('/Novice/home', 'Accueil', Icons.home_outlined),
+          NavTab('/Novice/messages', 'Messages', Icons.chat_bubble_outline),
+          NavTab('/Novice/projet', 'Projet', Icons.topic_outlined),
+          NavTab('/Novice/profil', 'Profile', Icons.person_outline),
         ];
         return AppShell(tabs: proTabs, child: child);
       },
       routes: <RouteBase>[
         GoRoute(
-          path: '/pro/home',
+          path: '/Novice/home',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceHomePage();
           },
         ),
         GoRoute(
-          path: '/pro/messages',
+          path: '/Novice/messages',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceMessagesPage();
           },
         ),
         GoRoute(
-          path: '/pro/projet',
+          path: '/Novice/projet',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceProjectsPage();
           },
         ),
         GoRoute(
-          path: '/pro/profil',
+          path: '/Novice/profil',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceProfilePage();
           },
