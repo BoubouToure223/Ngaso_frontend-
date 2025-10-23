@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 class NavTab {
   final String path;
   final String label;
-  final IconData icon;
-  const NavTab(this.path, this.label, this.icon);
+  final Widget iconWidget;
+  const NavTab(this.path, this.label, this.iconWidget);
 }
 
 class AppShell extends StatelessWidget {
@@ -27,9 +27,7 @@ class AppShell extends StatelessWidget {
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Color(0xFFFCFAF7),
-          border: Border(
-            top: BorderSide(color: Color(0xFFF2EAE8), width: 1),
-          ),
+          border: Border(top: BorderSide(color: Color(0xFFF2EAE8), width: 1)),
         ),
         child: BottomNavigationBar(
           currentIndex: current,
@@ -40,7 +38,26 @@ class AppShell extends StatelessWidget {
           showUnselectedLabels: true,
           onTap: (i) => context.go(tabs[i].path),
           items: tabs
-              .map((t) => BottomNavigationBarItem(icon: Icon(t.icon), label: t.label))
+              .asMap() // Utiliser asMap pour obtenir l'index
+              .entries
+              .map((entry) {
+                final int index = entry.key;
+                final NavTab t = entry.value;
+                final bool isSelected = index == current;
+                final Color color = isSelected
+                    ? const Color(0xFF1C120D)
+                    : const Color(0xFF99604C);
+
+                final Widget coloredIcon = ColorFiltered(
+                  colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+                  child: t.iconWidget, // Utilise le Widget du NavTab
+                );
+
+                return BottomNavigationBarItem(
+                  icon: coloredIcon,
+                  label: t.label,
+                );
+              })
               .toList(),
         ),
       ),
