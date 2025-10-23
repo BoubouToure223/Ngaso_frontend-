@@ -179,7 +179,10 @@ class ProHomePage extends StatelessWidget {
                             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF2C3E50)),
                           ),
                         ),
-                        TextButton(onPressed: () {}, child: const Text('Voir tout')),
+                        TextButton(
+                          onPressed: () { context.go('/app/realizations'); },
+                          child: const Text('Voir tout'),
+                        ),
                       ],
                     ),
                     SizedBox(
@@ -220,16 +223,6 @@ class ProHomePage extends StatelessWidget {
                               ),
                           ],
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: FloatingActionButton(
-                        onPressed: () {},
-                        backgroundColor: const Color(0xFF3F51B5),
-                        mini: true,
-                        child: const Icon(Icons.add, color: Colors.white),
                       ),
                     ),
                   ],

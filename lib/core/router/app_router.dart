@@ -17,6 +17,7 @@ import 'package:myapp/features/pro/screens/notifications_page.dart';
 import 'package:myapp/features/pro/screens/proposal_details_page.dart';
 import 'package:myapp/features/pro/screens/chat_page.dart';
 import 'package:myapp/features/pro/screens/proposal_create_page.dart';
+import 'package:myapp/features/pro/screens/realizations_page.dart';
 import 'package:myapp/features/novice/screens/home_page.dart';
 import 'package:myapp/features/novice/screens/messages_page.dart';
 import 'package:myapp/features/novice/screens/projects_page.dart';
@@ -126,6 +127,12 @@ final GoRouter router = GoRouter(
           path: '/app/proposition-create',
           builder: (BuildContext context, GoRouterState state) {
             return const ProProposalCreatePage();
+          },
+        ),
+        GoRoute(
+          path: '/app/realizations',
+          builder: (BuildContext context, GoRouterState state) {
+            return const ProRealizationsPage();
           },
         ),
         GoRoute(
