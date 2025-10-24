@@ -128,10 +128,10 @@ class NoviceHomePage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Row(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: ClipRRect(
+                               ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: LinearProgressIndicator(
                                     value: 0.35,
@@ -142,9 +142,10 @@ class NoviceHomePage extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              ElevatedButton(
+                                const SizedBox(height: 15),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child:ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF3F51B5),
                                   foregroundColor: Colors.white,
@@ -167,6 +168,7 @@ class NoviceHomePage extends StatelessWidget {
                                   context.go('/Novice/projet');
                                 },
                                 child: const Text('Voir les étapes'),
+                              ),
                               ),
                             ],
                           ),
@@ -288,7 +290,7 @@ class _QuickCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Color(0xFFFCFAF7),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: const Color(0xFFE5DBD7), // un peu plus contrasté que F2EAE8
