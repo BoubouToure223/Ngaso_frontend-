@@ -218,13 +218,7 @@ class NoviceHomePage extends StatelessWidget {
                       icon: Icons.add,
                       title: 'Créer un projet de construction',
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Création de projet bientôt disponible',
-                            ),
-                          ),
-                        );
+                        context.push('/Novice/project-create');
                       },
                     ),
                     const SizedBox(height: 20),
