@@ -24,6 +24,10 @@ import 'package:myapp/features/novice/screens/home_page.dart';
 import 'package:myapp/features/novice/screens/messages_page.dart';
 import 'package:myapp/features/novice/screens/projects_page.dart';
 import 'package:myapp/features/novice/screens/profile_page.dart';
+import 'package:myapp/features/novice/screens/chat_page.dart';
+import 'package:myapp/features/novice/screens/change_password_page.dart';
+import 'package:myapp/features/novice/screens/notifications_page.dart';
+import 'package:myapp/features/novice/screens/guide_permis_page.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 // Fonction utilitaire pour le SVG (avec placeholder discret)
@@ -43,6 +47,13 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/',
       redirect: (BuildContext context, GoRouterState state) => '/Novice/home',
+    ),
+    // La route pour la page splash.
+    GoRoute(
+      path: '/splash',
+      builder: (BuildContext context, GoRouterState state) {
+        return const SplashPage();
+      },
     ),
     // La route pour la page d'onboarding.
     GoRoute(
@@ -207,6 +218,30 @@ final GoRouter router = GoRouter(
           path: '/Novice/profil',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceProfilePage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/guide-permis',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceGuidePermisPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/notifications',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceNotificationsPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/change-password',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceChangePasswordPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/chat',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceChatPage();
           },
         ),
       ],

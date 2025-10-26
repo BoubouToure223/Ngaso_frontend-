@@ -22,45 +22,50 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = _currentIndex(context);
+    final loc = GoRouterState.of(context).uri.toString();
+    final bool showBottomBar = tabs.any((t) => loc.startsWith(t.path));
     return Scaffold(
       body: child,
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFFFCFAF7),
-          border: Border(top: BorderSide(color: Color(0xFFF2EAE8), width: 1)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: current,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: const Color(0xFFFCFAF7),
-          selectedItemColor: const Color(0xFF1C120D),
-          unselectedItemColor: const Color(0xFF99604C),
-          showUnselectedLabels: true,
-          onTap: (i) => context.go(tabs[i].path),
-          items: tabs
-              .asMap() // Utiliser asMap pour obtenir l'index
-              .entries
-              .map((entry) {
-                final int index = entry.key;
-                final NavTab t = entry.value;
-                final bool isSelected = index == current;
-                final Color color = isSelected
-                    ? const Color(0xFF1C120D)
-                    : const Color(0xFF99604C);
+      bottomNavigationBar: showBottomBar
+          ? Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFFCFAF7),
+                border:
+                    Border(top: BorderSide(color: Color(0xFFF2EAE8), width: 1)),
+              ),
+              child: BottomNavigationBar(
+                currentIndex: current,
+                type: BottomNavigationBarType.fixed,
+                backgroundColor: const Color(0xFFFCFAF7),
+                selectedItemColor: const Color(0xFF1C120D),
+                unselectedItemColor: const Color(0xFF99604C),
+                showUnselectedLabels: true,
+                onTap: (i) => context.go(tabs[i].path),
+                items: tabs
+                    .asMap()
+                    .entries
+                    .map((entry) {
+                      final int index = entry.key;
+                      final NavTab t = entry.value;
+                      final bool isSelected = index == current;
+                      final Color color = isSelected
+                          ? const Color(0xFF1C120D)
+                          : const Color(0xFF99604C);
 
-                final Widget coloredIcon = ColorFiltered(
-                  colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-                  child: t.iconWidget, // Utilise le Widget du NavTab
-                );
+                      final Widget coloredIcon = ColorFiltered(
+                        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+                        child: t.iconWidget,
+                      );
 
-                return BottomNavigationBarItem(
-                  icon: coloredIcon,
-                  label: t.label,
-                );
-              })
-              .toList(),
-        ),
-      ),
+                      return BottomNavigationBarItem(
+                        icon: coloredIcon,
+                        label: t.label,
+                      );
+                    })
+                    .toList(),
+              ),
+            )
+          : null,
     );
   }
 }
