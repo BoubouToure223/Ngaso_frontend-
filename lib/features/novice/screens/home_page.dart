@@ -39,7 +39,7 @@ class NoviceHomePage extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () => context.push('/Novice/notifications'),
                     icon: const Icon(
                       Icons.notifications_none_rounded,
                       color: Color(0xFF1C120D),
@@ -81,7 +81,7 @@ class NoviceHomePage extends StatelessWidget {
                                   width: 56,
                                   height: 56,
                                   child: Image.asset(
-                                    'assets/images/project.jpg',
+                                    'assets/images/mon_projet.png',
                                     fit: BoxFit.cover,
                                     errorBuilder: (c, e, s) => Container(
                                       color: const Color(0xFFEDE7E3),
@@ -207,13 +207,7 @@ class NoviceHomePage extends StatelessWidget {
                             icon: Icons.book,
                             title: 'Guide permis',
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Guide permis bientôt disponible',
-                                  ),
-                                ),
-                              );
+                              context.push('/Novice/guide-permis');
                             },
                           ),
                         ),
@@ -388,7 +382,7 @@ class _TipCarouselState extends State<_TipCarousel> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   image: const DecorationImage(
-                    image: AssetImage('assets/images/tip.jpg'),
+                    image: AssetImage('assets/images/carousel_1.png'),
                     fit: BoxFit.cover,
                   ),
                 ),
