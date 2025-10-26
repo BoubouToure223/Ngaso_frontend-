@@ -191,13 +191,7 @@ class NoviceHomePage extends StatelessWidget {
                             icon: Icons.home,
                             title: 'Mes projets',
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Mes projets bientôt disponible',
-                                  ),
-                                ),
-                              );
+                              context.push('/Novice/my-projects');
                             },
                           ),
                         ),

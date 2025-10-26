@@ -6,6 +6,7 @@ import 'package:myapp/features/auth/screens/forgot_password_page.dart';
 import 'package:myapp/features/auth/screens/novice_signup_page.dart';
 import 'package:myapp/features/auth/screens/profile_choice_page.dart';
 import 'package:myapp/features/auth/screens/pro_signup_page.dart';
+import 'package:myapp/features/novice/screens/my_projects_page.dart';
 import 'package:myapp/features/onboarding/screens/onboarding_page.dart';
 import 'package:myapp/features/splash/screens/splash_page.dart';
 import 'package:myapp/shared/shell/app_shell.dart';
@@ -231,6 +232,12 @@ final GoRouter router = GoRouter(
           path: '/Novice/project-create',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceProjectCreatePage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/my-projects',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceMyProjectsPage();
           },
         ),
         GoRoute(
