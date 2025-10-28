@@ -23,13 +23,14 @@ import 'package:myapp/features/pro/screens/change_password_page.dart';
 import 'package:myapp/features/pro/screens/service_requests_page.dart';
 import 'package:myapp/features/novice/screens/home_page.dart';
 import 'package:myapp/features/novice/screens/messages_page.dart';
-import 'package:myapp/features/novice/screens/projects_page.dart';
 import 'package:myapp/features/novice/screens/profile_page.dart';
 import 'package:myapp/features/novice/screens/chat_page.dart';
 import 'package:myapp/features/novice/screens/change_password_page.dart';
 import 'package:myapp/features/novice/screens/notifications_page.dart';
 import 'package:myapp/features/novice/screens/guide_permis_page.dart';
 import 'package:myapp/features/novice/screens/project_create_page.dart';
+import 'package:myapp/features/novice/screens/demand_page.dart';
+import 'package:myapp/features/novice/screens/steps_page.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 // Fonction utilitaire pour le SVG (avec placeholder discret)
@@ -192,7 +193,7 @@ final GoRouter router = GoRouter(
         final noviceTabs = [
           NavTab('/Novice/home', 'Accueil', createSvgIcon('assets/icons/home_icon.svg')),
           NavTab('/Novice/messages', 'Messages', createSvgIcon('assets/icons/message_icon.svg')),
-          NavTab('/Novice/projet', 'Demandes', createSvgIcon('assets/icons/demande_icon.svg')),
+          NavTab('/Novice/demand', 'Demandes', createSvgIcon('assets/icons/demande_icon.svg')),
           NavTab('/Novice/profil', 'Profile', createSvgIcon('assets/icons/profile_icon.svg')),
         ];
         return AppShell(tabs: noviceTabs, child: child);
@@ -211,12 +212,6 @@ final GoRouter router = GoRouter(
           },
         ),
         GoRoute(
-          path: '/Novice/projet',
-          builder: (BuildContext context, GoRouterState state) {
-            return const NoviceProjectsPage();
-          },
-        ),
-        GoRoute(
           path: '/Novice/profil',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceProfilePage();
@@ -232,6 +227,18 @@ final GoRouter router = GoRouter(
           path: '/Novice/project-create',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceProjectCreatePage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/demand',
+          builder: (BuildContext context, GoRouterState state) {
+            return const DemandPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStepsPage();
           },
         ),
         GoRoute(

@@ -158,14 +158,7 @@ class NoviceHomePage extends StatelessWidget {
                                   ),
                                 ),
                                 onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Ouverture des étapes du projet…',
-                                      ),
-                                    ),
-                                  );
-                                  context.go('/Novice/projet');
+                                  context.push('/Novice/steps');
                                 },
                                 child: const Text('Voir les étapes'),
                               ),
