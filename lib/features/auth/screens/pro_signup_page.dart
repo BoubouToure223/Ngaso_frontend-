@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/repositories/auth_repository.dart';
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:myapp/core/data/services/public_api_service.dart';
+import 'package:myapp/core/data/models/specialite.dart';
 
 /// Page d'inscription pour les utilisateurs "professionnels".
 class ProSignupPage extends StatefulWidget {
@@ -21,11 +26,42 @@ class _ProSignupPageState extends State<ProSignupPage> {
   final TextEditingController _aboutCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
   final TextEditingController _confirmPasswordCtrl = TextEditingController();
+  bool _loading = false;
+  PlatformFile? _selectedDoc;
 
   // Spécialité sélectionnée et indicateurs pour masquer/afficher les mots de passe.
   String? _specialty;
+  List<Specialite> _specialites = const [];
+  bool _loadingSpecialites = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSpecialites();
+  }
+
+  Future<void> _fetchSpecialites() async {
+    setState(() => _loadingSpecialites = true);
+    try {
+      final service = PublicApiService();
+      final list = await service.getSpecialites();
+      setState(() {
+        _specialites = list;
+        // Ne pas pré-sélectionner: forcer l'utilisateur à choisir.
+        _specialty = null;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Échec du chargement des spécialités: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loadingSpecialites = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -159,18 +195,30 @@ class _ProSignupPageState extends State<ProSignupPage> {
                         const SizedBox(height: 16),
                         // Champ de sélection de la spécialité.
                         DropdownButtonFormField<String>(
-                          initialValue: _specialty,
-                          decoration: _filledDecoration('Selectionnez votre spécialité'),
+                          value: _specialty,
+                          isExpanded: true,
+                          decoration: _filledDecoration(_loadingSpecialites ? 'Chargement...' : 'Sélectionnez votre spécialité'),
                           icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                          items: const [
-                            DropdownMenuItem(value: 'Maconnerie', child: Text('Maçonnerie')),
-                            DropdownMenuItem(value: 'Electricite', child: Text('Électricité')),
-                            DropdownMenuItem(value: 'Plomberie', child: Text('Plomberie')),
-                            DropdownMenuItem(value: 'Menuiserie', child: Text('Menuiserie')),
-                            DropdownMenuItem(value: 'Peinture', child: Text('Peinture')),
-                          ],
-                          onChanged: (v) => setState(() => _specialty = v),
+                          items: _loadingSpecialites
+                              ? const <DropdownMenuItem<String>>[]
+                              : _specialites
+                                  .map((s) => DropdownMenuItem<String>(
+                                        value: s.id?.toString(),
+                                        child: Text(s.libelle),
+                                      ))
+                                  .toList(),
+                          onChanged: _loadingSpecialites
+                              ? null
+                              : (v) => setState(() => _specialty = v),
                         ),
+                        if (!_loadingSpecialites && _specialites.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              'Aucune spécialité disponible. Veuillez réessayer plus tard.',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.redAccent),
+                            ),
+                          ),
                         const SizedBox(height: 16),
                         // Champ Email.
                         TextField(
@@ -206,7 +254,20 @@ class _ProSignupPageState extends State<ProSignupPage> {
                         ),
                         const SizedBox(height: 24),
                         // Section pour les documents justificatifs.
-                        _DocumentsSection(),
+                        _DocumentsSection(
+                          onPick: () async {
+                            final res = await FilePicker.platform.pickFiles(
+                              type: FileType.custom,
+                              allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+                              withData: true,
+                            );
+                            if (res != null && res.files.isNotEmpty) {
+                              setState(() => _selectedDoc = res.files.first);
+                            }
+                          },
+                          onRemove: () => setState(() => _selectedDoc = null),
+                          fileName: _selectedDoc?.name,
+                        ),
                         const SizedBox(height: 24),
                         // Champ Mot de passe.
                         TextField(
@@ -239,10 +300,115 @@ class _ProSignupPageState extends State<ProSignupPage> {
                           width: double.infinity,
                           height: 48,
                           child: ElevatedButton(
-                            onPressed: () {
-                              //Implémenter la logique de création de compte.
-                            },
-                            child: const Text('Créer mon compte'),
+                            onPressed: _loading
+                                ? null
+                                : () async {
+                                    final email = _emailCtrl.text.trim();
+                                    final pwd = _passwordCtrl.text;
+                                    final confirm = _confirmPasswordCtrl.text;
+                                    if (!_loadingSpecialites && _specialites.isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Impossible de continuer: aucune spécialité n\'est disponible.')),
+                                      );
+                                      return;
+                                    }
+                                    if (_specialty == null || _specialty!.isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Veuillez sélectionner une spécialité')),
+                                      );
+                                      return;
+                                    }
+                                    if (email.isEmpty || !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Entrez un email valide')),
+                                      );
+                                      return;
+                                    }
+                                    if (pwd.isEmpty || pwd.length < 6) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Mot de passe trop court (min 6)')),
+                                      );
+                                      return;
+                                    }
+                                    if (pwd != confirm) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Les mots de passe ne correspondent pas')),
+                                      );
+                                      return;
+                                    }
+                                    if (_selectedDoc == null) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Veuillez joindre un document justificatif')),
+                                      );
+                                      return;
+                                    }
+                                    setState(() => _loading = true);
+                                    try {
+                                      final repo = AuthRepository();
+                                      final data = {
+                                        'nom': _lastNameCtrl.text.trim(),
+                                        'prenom': _firstNameCtrl.text.trim(),
+                                        'entreprise': _companyNameCtrl.text.trim(),
+                                        'specialiteId': int.tryParse(_specialty ?? ''),
+                                        'email': email,
+                                        'telephone': _phoneCtrl.text.trim(),
+                                        'adresse': _addressCtrl.text.trim(),
+                                        'description': _aboutCtrl.text.trim(),
+                                        'password': pwd,
+                                      };
+                                      MultipartFile? doc;
+                                      if (_selectedDoc != null) {
+                                        if (_selectedDoc!.bytes != null) {
+                                          doc = MultipartFile.fromBytes(_selectedDoc!.bytes!, filename: _selectedDoc!.name);
+                                        } else if (_selectedDoc!.path != null) {
+                                          doc = await MultipartFile.fromFile(_selectedDoc!.path!, filename: _selectedDoc!.name);
+                                        }
+                                      }
+                                      final res = await repo.registerProfessionnel(data: data, document: doc);
+                                      if (!mounted) return;
+                                      if (res.token.isEmpty) {
+                                        await showDialog<void>(
+                                          context: context,
+                                          builder: (ctx) => AlertDialog(
+                                            title: const Text('Inscription envoyée'),
+                                            content: const Text('Votre compte professionnel a été soumis et sera validé par un administrateur. Vous serez notifié une fois la validation effectuée.'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.of(ctx).pop(),
+                                                child: const Text('OK'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (!mounted) return;
+                                        context.go('/connexion');
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Compte Pro créé, connexion automatique...')),
+                                        );
+                                        final role = (res.role ?? '').toLowerCase();
+                                        if (role == 'professionnel' || role == 'pro') {
+                                          context.go('/pro/home');
+                                        } else {
+                                          context.go('/pro/home');
+                                        }
+                                      }
+                                    } catch (e) {
+                                      if (!mounted) return;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(e.toString())),
+                                      );
+                                    } finally {
+                                      if (mounted) setState(() => _loading = false);
+                                    }
+                                  },
+                            child: _loading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Text('Créer mon compte'),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -290,6 +456,11 @@ class _ProSignupPageState extends State<ProSignupPage> {
 
 /// Section pour le téléversement de documents justificatifs.
 class _DocumentsSection extends StatelessWidget {
+  final VoidCallback? onPick;
+  final VoidCallback? onRemove;
+  final String? fileName;
+  const _DocumentsSection({super.key, this.onPick, this.onRemove, this.fileName});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -319,27 +490,62 @@ class _DocumentsSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           // Zone de glisser-déposer.
-          Container(
-            height: 140,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFC2C2C2), width: 1.5),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.upload_file, size: 28, color: Colors.black54),
-                SizedBox(height: 8),
-                Text('Glissez-déposez vos fichiers ici ou', textAlign: TextAlign.center),
-                SizedBox(height: 2),
-                Text('parcourir', style: TextStyle(color: Color(0xFF3F51B5))),
-                SizedBox(height: 8),
-                Text('.pdf, .jpg, .jpeg, .png (max 5 MB)', style: TextStyle(fontSize: 12, color: Colors.black54)),
-              ],
+          InkWell(
+            onTap: onPick,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              height: 140,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFC2C2C2), width: 1.5),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.upload_file, size: 28, color: Colors.black54),
+                  const SizedBox(height: 8),
+                  const Text('Glissez-déposez vos fichiers ici ou', textAlign: TextAlign.center),
+                  const SizedBox(height: 2),
+                  onPick != null
+                      ? TextButton(
+                          onPressed: onPick,
+                          child: const Text('parcourir', style: TextStyle(color: Color(0xFF3F51B5))),
+                        )
+                      : const Text('parcourir', style: TextStyle(color: Color(0xFF3F51B5))),
+                  const SizedBox(height: 8),
+                  const Text('.pdf, .jpg, .jpeg, .png (max 5 MB)', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                ],
+              ),
             ),
           ),
+          if (fileName != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    'Fichier sélectionné: $fileName',
+                    style: theme.textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: 'Retirer',
+                  child: InkWell(
+                    onTap: onRemove,
+                    child: const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.close, size: 18, color: Colors.black54),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

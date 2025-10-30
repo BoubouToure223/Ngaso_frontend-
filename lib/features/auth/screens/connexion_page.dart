@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/repositories/auth_repository.dart';
 
 /// La page de connexion, où les utilisateurs peuvent entrer leurs identifiants.
 class ConnexionPage extends StatefulWidget {
@@ -17,6 +19,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
   final _emailController = TextEditingController();
   // Contrôleur pour le champ de saisie du mot de passe.
   final _passwordController = TextEditingController();
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -107,16 +110,18 @@ class _ConnexionPageState extends State<ConnexionPage> {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          // Champ de saisie pour l'e-mail.
+                          // Champ de saisie pour le numéro de téléphone (8 chiffres).
                           TextFormField(
                             controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            maxLength: 8,
                             validator: (v) {
-                              if (v == null || v.isEmpty) return 'Entrez votre email';
-                              if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)) return 'Email invalide';
+                              if (v == null || v.isEmpty) return 'Entrez votre numéro de téléphone';
+                              if (v.length != 8) return 'Le numéro doit contenir 8 chiffres';
                               return null;
                             },
-                             decoration: const InputDecoration(labelText: 'Entrez votre email'),
+                            decoration: const InputDecoration(labelText: 'Entrez votre numéro (8 chiffres)'),
                           ),
                           const SizedBox(height: 16),
                           // Champ de saisie pour le mot de passe.
@@ -140,12 +145,45 @@ class _ConnexionPageState extends State<ConnexionPage> {
                           SizedBox(
                             height: 48,
                             child: ElevatedButton(
-                              onPressed: () {
-                                // Valide le formulaire avant de continuer.
-                                if (!(_formKey.currentState?.validate() ?? false)) return;
-                                context.go('/pro/home');
-                              },
-                              child: const Text('Se connecter'),
+                              onPressed: _loading
+                                  ? null
+                                  : () async {
+                                      if (!(_formKey.currentState?.validate() ?? false)) return;
+                                      setState(() => _loading = true);
+                                      try {
+                                        final repo = AuthRepository();
+                                        final res = await repo.login(
+                                          _emailController.text.trim(),
+                                          _passwordController.text,
+                                        );
+                                        final role = (res.role ?? '').toLowerCase();
+                                        if (!mounted) return;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Connexion réussie')),
+                                        );
+                                        if (role == 'novice') {
+                                          context.go('/Novice/home');
+                                        } else if (role == 'professionnel' || role == 'pro') {
+                                          context.go('/pro/home', extra: {'professionnelId': res.userId});
+                                        } else {
+                                          context.go('/Novice/home');
+                                        }
+                                      } catch (e) {
+                                        if (!mounted) return;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(e.toString())),
+                                        );
+                                      } finally {
+                                        if (mounted) setState(() => _loading = false);
+                                      }
+                                    },
+                              child: _loading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : const Text('Se connecter'),
                             ),
                           ),
                           const SizedBox(height: 24),

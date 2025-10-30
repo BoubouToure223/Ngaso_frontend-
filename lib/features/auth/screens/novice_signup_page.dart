@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/repositories/auth_repository.dart';
 
 /// Page d'inscription pour les utilisateurs "novices" (particuliers).
 class NoviceSignupPage extends StatefulWidget {
@@ -19,6 +20,7 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
   final TextEditingController _addressCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
   final TextEditingController _confirmPasswordCtrl = TextEditingController();
+  bool _loading = false;
 
   // Indicateurs pour masquer/afficher les mots de passe.
   bool _obscurePassword = true;
@@ -199,10 +201,68 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
                           width: double.infinity,
                           height: 48,
                           child: ElevatedButton(
-                            onPressed: () {
-                              //Implémenter la logique de création de compte.
-                            },
-                            child: const Text('Créer mon compte'),
+                            onPressed: _loading
+                                ? null
+                                : () async {
+                                    final email = _emailCtrl.text.trim();
+                                    final pwd = _passwordCtrl.text;
+                                    final confirm = _confirmPasswordCtrl.text;
+                                    if (email.isEmpty || !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Entrez un email valide')),
+                                      );
+                                      return;
+                                    }
+                                    if (pwd.isEmpty || pwd.length < 6) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Mot de passe trop court (min 6)')),
+                                      );
+                                      return;
+                                    }
+                                    if (pwd != confirm) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Les mots de passe ne correspondent pas')),
+                                      );
+                                      return;
+                                    }
+                                    setState(() => _loading = true);
+                                    try {
+                                      final repo = AuthRepository();
+                                      final body = {
+                                        'lastName': _lastNameCtrl.text.trim(),
+                                        'firstName': _firstNameCtrl.text.trim(),
+                                        'email': email,
+                                        'phone': _phoneCtrl.text.trim(),
+                                        'address': _addressCtrl.text.trim(),
+                                        'password': pwd,
+                                      };
+                                      final res = await repo.registerNovice(body);
+                                      if (!mounted) return;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Compte créé, connexion automatique...')),
+                                      );
+                                      final role = (res.role ?? '').toLowerCase();
+                                      if (role == 'novice') {
+                                        context.go('/Novice/home');
+                                      } else {
+                                        context.go('/Novice/home');
+                                      }
+                                    } catch (e) {
+                                      if (!mounted) return;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(e.toString())),
+                                      );
+                                    } finally {
+                                      if (mounted) setState(() => _loading = false);
+                                    }
+                                  },
+                            child: _loading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Text('Créer mon compte'),
                           ),
                         ),
                         const SizedBox(height: 16),

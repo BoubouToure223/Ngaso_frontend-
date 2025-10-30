@@ -48,7 +48,9 @@ final GoRouter router = GoRouter(
     // La route initiale de l'application.
     GoRoute(
       path: '/',
-      redirect: (BuildContext context, GoRouterState state) => '/Novice/home',
+      redirect: (BuildContext context, GoRouterState state) {
+        return '/splash';
+      }
     ),
     // La route pour la page splash.
     GoRoute(
@@ -114,7 +116,14 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/pro/home',
           builder: (BuildContext context, GoRouterState state) {
-            return const ProHomePage();
+            int? proId;
+            final extra = state.extra;
+            if (extra is Map) {
+              final v = extra['professionnelId'];
+              if (v is int) proId = v;
+              if (v is String) proId = int.tryParse(v);
+            }
+            return ProHomePage(professionnelId: proId ?? 0);
           },
         ),
         GoRoute(

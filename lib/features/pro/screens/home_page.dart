@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:convert';
+import 'package:myapp/core/data/services/pro_api_service.dart';
+import 'package:myapp/core/data/models/pro_dashboard.dart';
+import 'package:myapp/core/storage/token_storage.dart';
 
 /// Page d'accueil (Espace Pro).
 ///
@@ -7,8 +11,59 @@ import 'package:go_router/go_router.dart';
 /// - Cartes KPI cliquables (propositions, demandes, messages).
 /// - Liste de projets disponibles (accès rapide à la création de proposition).
 /// - Section "Vos réalisations" avec galerie horizontale.
-class ProHomePage extends StatelessWidget {
-  const ProHomePage({super.key});
+class ProHomePage extends StatefulWidget {
+  const ProHomePage({super.key, required this.professionnelId});
+  final int professionnelId;
+
+  @override
+  State<ProHomePage> createState() => _ProHomePageState();
+}
+
+class _ProHomePageState extends State<ProHomePage> {
+  Future<ProDashboard>? _future;
+  int? _proId;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    final id = await _resolveProfessionnelId(widget.professionnelId);
+    if (!mounted) return;
+    setState(() {
+      _proId = id;
+      if (id != 0) {
+        _future = ProApiService().getDashboard(professionnelId: id);
+      } else {
+        _future = null;
+      }
+    });
+  }
+
+  Future<int> _resolveProfessionnelId(int incoming) async {
+    if (incoming != 0) return incoming;
+    // Decode JWT to get user id from 'sub'
+    final token = await TokenStorage.instance.readToken();
+    if (token == null || token.isEmpty) return 0;
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return 0;
+      String normalized = base64Url.normalize(parts[1]);
+      final payloadJson = utf8.decode(base64Url.decode(normalized));
+      final payload = json.decode(payloadJson);
+      final sub = payload['sub'];
+      if (sub is String) return int.tryParse(sub) ?? 0;
+      if (sub is int) return sub;
+      final userId = payload['userId'];
+      if (userId is int) return userId;
+      if (userId is String) return int.tryParse(userId) ?? 0;
+      return 0;
+    } catch (_) {
+      return 0;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,193 +108,240 @@ class ProHomePage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    'Bienvenue Amadou 👋',
-                    style: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFF2C3E50)),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Voici un aperçu de votre activité aujourd'hui.",
-                    style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF333333)),
+                  FutureBuilder<ProDashboard>(
+                    future: _future,
+                    builder: (context, snap) {
+                      final title = snap.hasData ? 'Bienvenue ${snap.data!.prenom} 👋' : 'Bienvenue 👋';
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFF2C3E50)),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Voici un aperçu de votre activité aujourd'hui.",
+                            style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF333333)),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
             ),
             // Contenu scrollable: KPI, projets, réalisations
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-                    // Cartes KPI (Propositions / Demandes)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(8),
-                              onTap: () => context.go('/pro/proposition-details'),
-                              child: _StatCard(
-                                emoji: '📬',
-                                title: 'Propositions',
-                                value: '7',
-                                subtitle: '5 en attente, 2 validées',
-                              ),
+              child: _future == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : FutureBuilder<ProDashboard>(
+                future: _future!,
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snap.hasError) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Impossible de charger le tableau de bord',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            snap.error.toString(),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF64748B)),
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                if (_proId == null || _proId == 0) {
+                                  _init();
+                                } else {
+                                  setState(() {
+                                    _future = ProApiService().getDashboard(professionnelId: _proId!);
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.refresh, size: 16),
+                              label: const Text('Réessayer'),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(8),
-                              onTap: () => context.go('/pro/service-requests'),
-                              child: _StatCard(
-                                emoji: '🧾',
-                                title: 'Demande de service',
-                                value: '3',
-                                subtitle: 'Envoyés',
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
+                        ],
+                      ),
+                    );
+                  }
+                  final data = snap.data;
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(8),
-                              onTap: () => context.go('/pro/messages'),
-                              child: _StatCard(
-                                emoji: '💬',
-                                title: 'Messages',
-                                value: '5',
-                                subtitle: '3 non lus',
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(child: SizedBox()),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    // En-tête section: Projets disponibles
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Projets disponibles 🔥',
-                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: () {
-                            context.go('/pro/projet');
-                          },
-                          icon: const Icon(Icons.chevron_right, size: 18),
-                          label: const Text('Voir tout'),
-                          style: TextButton.styleFrom(foregroundColor: const Color(0xFF0F172A)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    // Cartes projet (accès rapide)
-                    _ProjectCard(
-                      title: 'Construction de Bâtiment',
-                      location: 'ACI 2000',
-                      budget: '2 0000000 fcfa',
-                      dateText: 'Il y a 2 jours',
-                      onPropose: () { context.push('/pro/proposition-create'); },
-                      onTap: () { context.push('/pro/proposition-create'); },
-                      primary: const Color(0xFF3F51B5),
-                    ),
-                    const SizedBox(height: 12),
-                    _ProjectCard(
-                      title: 'Construction de Bâtiment',
-                      location: 'ACI 2000',
-                      budget: '2 0000000 fcfa',
-                      dateText: 'Il y a 2 jours',
-                      onPropose: () { context.push('/pro/proposition-create'); },
-                      onTap: () { context.push('/pro/proposition-create'); },
-                      primary: const Color(0xFF3F51B5),
-                    ),
-                    const SizedBox(height: 12),
-                    _ProjectCard(
-                      title: 'Construction de Bâtiment',
-                      location: 'ACI 2000',
-                      budget: '2 0000000 fcfa',
-                      dateText: 'Il y a 2 jours',
-                      onPropose: () { context.push('/pro/proposition-create'); },
-                      onTap: () { context.push('/pro/proposition-create'); },
-                      primary: const Color(0xFF3F51B5),
-                    ),
-                    const SizedBox(height: 20),
-                    // En-tête section: Vos réalisations
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Vos réalisations',
-                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF2C3E50)),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () { context.go('/pro/realizations'); },
-                          child: const Text('Voir tout'),
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      height: 140,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
+                        const SizedBox(height: 8),
+                        // Cartes KPI (Propositions / Demandes)
+                        Row(
                           children: [
-                            for (final path in const [
-                              'assets/images/onboarding_1.png',
-                              'assets/images/onboarding_2.png',
-                              'assets/images/onboarding_3.png',
-                            ])
-                              Padding(
-                                padding: const EdgeInsets.only(right: 12),
-                                child: ClipRRect(
+                            Expanded(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
                                   borderRadius: BorderRadius.circular(8),
-                                  child: Container(
-                                    width: 200,
-                                    height: 140,
-                                    color: Colors.white,
-                                    child: Image.asset(
-                                      path,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stack) {
-                                        return Container(
-                                          color: const Color(0xFFF5F5F5),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            'Image manquante',
-                                            style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF64748B)),
-                                          ),
-                                        );
-                                      },
-                                    ),
+                                  onTap: () => context.go('/pro/proposition-details'),
+                                  child: _StatCard(
+                                    emoji: '📬',
+                                    title: 'Propositions',
+                                    value: data != null ? (data.propositionsEnAttente + data.propositionsValidees).toString() : '-',
+                                    subtitle: data != null ? '${data.propositionsEnAttente} en attente, ${data.propositionsValidees} validées' : '',
                                   ),
                                 ),
                               ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(8),
+                                  onTap: () => context.go('/pro/service-requests'),
+                                  child: _StatCard(
+                                    emoji: '🧾',
+                                    title: 'Demande de service',
+                                    value: data != null ? data.demandesTotal.toString() : '-',
+                                    subtitle: 'Envoyés',
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(8),
+                                  onTap: () => context.go('/pro/messages'),
+                                  child: _StatCard(
+                                    emoji: '💬',
+                                    title: 'Messages',
+                                    value: data != null ? data.messagesNonLus.toString() : '-',
+                                    subtitle: data != null ? '${data.messagesNonLus} non lus' : '',
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(child: SizedBox()),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        // En-tête section: Projets disponibles
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Projets disponibles 🔥',
+                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: () {
+                                context.go('/pro/projet');
+                              },
+                              icon: const Icon(Icons.chevron_right, size: 18),
+                              label: const Text('Voir tout'),
+                              style: TextButton.styleFrom(foregroundColor: const Color(0xFF0F172A)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        if (data != null && data.derniersProjets.isNotEmpty) ...[
+                          for (final p in data.derniersProjets) ...[
+                            _ProjectCard(
+                              title: (p['titre'] ?? p['title'] ?? 'Projet').toString(),
+                              location: (p['lieu'] ?? p['location'] ?? '-').toString(),
+                              budget: (p['budget'] ?? '-').toString(),
+                              dateText: (p['dateCreation'] ?? p['date'] ?? '').toString(),
+                              onPropose: () { context.push('/pro/proposition-create'); },
+                              onTap: () { context.push('/pro/proposition-create'); },
+                              primary: const Color(0xFF3F51B5),
+                            ),
+                            const SizedBox(height: 12),
+                          ]
+                        ]
+                        ,
+                        const SizedBox(height: 20),
+                        // En-tête section: Vos réalisations
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Vos réalisations',
+                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF2C3E50)),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () { context.go('/pro/realizations'); },
+                              child: const Text('Voir tout'),
+                            ),
+                          ],
+                        ),
+                        SizedBox(
+                          height: 140,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                if (data != null && data.realisations.isNotEmpty)
+                                  for (final r in data.realisations)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Container(
+                                          width: 200,
+                                          height: 140,
+                                          color: Colors.white,
+                                          child: (r is Map && r['imageUrl'] != null)
+                                              ? Image.network(
+                                                  r['imageUrl'].toString(),
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error, stack) {
+                                                    return Container(
+                                                      color: const Color(0xFFF5F5F5),
+                                                      alignment: Alignment.center,
+                                                      child: Text(
+                                                        'Image manquante',
+                                                        style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF64748B)),
+                                                      ),
+                                                    );
+                                                  },
+                                                )
+                                              : Center(
+                                                  child: Text(
+                                                    (r is Map && r['titre'] != null) ? r['titre'].toString() : 'Réalisation',
+                                                    style: theme.textTheme.bodySmall,
+                                                  ),
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ],
