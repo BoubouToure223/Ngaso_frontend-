@@ -129,9 +129,23 @@ class _StepCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Voir détails: ${data.title}')),
-                  );
+                  if (data.title.startsWith('Étape 1')) {
+                    context.push('/Novice/steps/1');
+                  } else if (data.title.startsWith('Étape 2')) {
+                    context.push('/Novice/steps/2');
+                  } else if (data.title.startsWith('Étape 3')) {
+                    context.push('/Novice/steps/3');
+                  } else if (data.title.startsWith('Étape 4')) {
+                    context.push('/Novice/steps/4');
+                  } else if (data.title.startsWith('Étape 5')) {
+                    context.push('/Novice/steps/5');
+                  } else if (data.title.startsWith('Étape 6')) {
+                    context.push('/Novice/steps/6');
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Voir détails: ${data.title}')),
+                    );
+                  }
                 },
                 child: const Text('Voir détails'),
               ),
@@ -151,10 +165,10 @@ class _Step {
 }
 
 const _mockSteps = <_Step>[
-  _Step(title: 'Étape 1', subtitle: 'Étude du terrain\nTerminé', imageAsset: 'assets/images/onboarding_bg.png'),
-  _Step(title: 'Étape 2', subtitle: 'Demande de permis de construire\nÀ venir', imageAsset: 'assets/images/permis.png'),
-  _Step(title: 'Étape 3', subtitle: 'Fondation\nÀ venir', imageAsset: 'assets/images/onboarding_1.png'),
-  _Step(title: 'Étape 4', subtitle: 'Élévation des murs\nÀ venir', imageAsset: 'assets/images/onboarding_2.png'),
-  _Step(title: 'Étape 5', subtitle: 'Couverture\nÀ venir', imageAsset: 'assets/images/onboarding_3.png'),
-  _Step(title: 'Étape 6', subtitle: 'Finition\nÀ venir', imageAsset: 'assets/images/onboarding_bg.png'),
+  _Step(title: 'Étape 1', subtitle: 'Étude du terrain\nTerminé', imageAsset: 'assets/images/etape1_img.png'),
+  _Step(title: 'Étape 2', subtitle: 'Demande de permis de construire\nÀ venir', imageAsset: 'assets/images/etape2_img.png'),
+  _Step(title: 'Étape 3', subtitle: 'Fondation\nÀ venir', imageAsset: 'assets/images/etape3_img.png'),
+  _Step(title: 'Étape 4', subtitle: 'Élévation des murs\nÀ venir', imageAsset: 'assets/images/etape4_img.png'),
+  _Step(title: 'Étape 5', subtitle: 'Couverture\nÀ venir', imageAsset: 'assets/images/etape5_img.png'),
+  _Step(title: 'Étape 6', subtitle: 'Finition\nÀ venir', imageAsset: 'assets/images/etape6_img.png'),
 ];

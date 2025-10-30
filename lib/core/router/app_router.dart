@@ -31,6 +31,14 @@ import 'package:myapp/features/novice/screens/guide_permis_page.dart';
 import 'package:myapp/features/novice/screens/project_create_page.dart';
 import 'package:myapp/features/novice/screens/demand_page.dart';
 import 'package:myapp/features/novice/screens/steps_page.dart';
+import 'package:myapp/features/novice/screens/step1_detail_page.dart';
+import 'package:myapp/features/novice/screens/step2_detail_page.dart';
+import 'package:myapp/features/novice/screens/step3_detail_page.dart';
+import 'package:myapp/features/novice/screens/step4_detail_page.dart';
+import 'package:myapp/features/novice/screens/step5_detail_page.dart';
+import 'package:myapp/features/novice/screens/step6_detail_page.dart';
+import 'package:myapp/features/novice/screens/experts_page.dart';
+import 'package:myapp/features/novice/screens/expert_detail_page.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 // Fonction utilitaire pour le SVG (avec placeholder discret)
@@ -239,6 +247,54 @@ final GoRouter router = GoRouter(
           path: '/Novice/steps',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceStepsPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps/1',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStep1DetailPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps/2',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStep2DetailPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps/3',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStep3DetailPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps/4',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStep4DetailPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps/5',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStep5DetailPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps/6',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStep6DetailPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/experts',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceExpertsPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/experts/detail',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceExpertDetailPage();
           },
         ),
         GoRoute(
