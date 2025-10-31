@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:myapp/core/data/services/pro_api_service.dart';
 import 'package:myapp/core/data/models/pro_dashboard.dart';
 import 'package:myapp/core/storage/token_storage.dart';
+import 'package:myapp/core/network/api_config.dart';
+import 'package:myapp/core/widgets/auth_image.dart';
 
 /// Page d'accueil (Espace Pro).
 ///
@@ -22,6 +24,19 @@ class ProHomePage extends StatefulWidget {
 class _ProHomePageState extends State<ProHomePage> {
   Future<ProDashboard>? _future;
   int? _proId;
+
+  String? _absUrl(String? u) {
+    if (u == null) return null;
+    u = u.trim();
+    if (u.isEmpty) return null;
+    // Normalize Windows backslashes
+    u = u.replaceAll('\\', '/');
+    if (u.startsWith('http://') || u.startsWith('https://')) return u;
+    final base = Uri.parse(ApiConfig.baseUrl);
+    final origin = '${base.scheme}://${base.host}${base.hasPort ? ':${base.port}' : ''}';
+    if (u.startsWith('/')) return '$origin$u';
+    return '$origin/$u';
+  }
 
   @override
   void initState() {
@@ -87,7 +102,7 @@ class _ProHomePageState extends State<ProHomePage> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: primary.withValues(alpha: 0.15),
+                          color: primary.withOpacity(0.15),
                           shape: BoxShape.circle,
                         ),
                         child: ClipOval(
@@ -182,9 +197,8 @@ class _ProHomePageState extends State<ProHomePage> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: <Widget>[
                         const SizedBox(height: 8),
-                        // Cartes KPI (Propositions / Demandes)
                         Row(
                           children: [
                             Expanded(
@@ -243,7 +257,6 @@ class _ProHomePageState extends State<ProHomePage> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        // En-tête section: Projets disponibles
                         Row(
                           children: [
                             Expanded(
@@ -253,9 +266,7 @@ class _ProHomePageState extends State<ProHomePage> {
                               ),
                             ),
                             TextButton.icon(
-                              onPressed: () {
-                                context.go('/pro/projet');
-                              },
+                              onPressed: () => context.go('/pro/projet'),
                               icon: const Icon(Icons.chevron_right, size: 18),
                               label: const Text('Voir tout'),
                               style: TextButton.styleFrom(foregroundColor: const Color(0xFF0F172A)),
@@ -267,19 +278,47 @@ class _ProHomePageState extends State<ProHomePage> {
                           for (final p in data.derniersProjets) ...[
                             _ProjectCard(
                               title: (p['titre'] ?? p['title'] ?? 'Projet').toString(),
-                              location: (p['lieu'] ?? p['location'] ?? '-').toString(),
+                              location: (p['lieu'] ?? p['location'] ?? p['localisation'] ?? '-').toString(),
                               budget: (p['budget'] ?? '-').toString(),
                               dateText: (p['dateCreation'] ?? p['date'] ?? '').toString(),
-                              onPropose: () { context.push('/pro/proposition-create'); },
-                              onTap: () { context.push('/pro/proposition-create'); },
+                              onPropose: () {
+                                final dynamic rawId = p['id'];
+                                int? pid;
+                                if (rawId is int) pid = rawId;
+                                if (rawId is String) pid = int.tryParse(rawId);
+                                if (pid != null) {
+                                  context.push('/pro/proposition-create', extra: {
+                                    'projectId': pid,
+                                    'projectTitle': (p['titre'] ?? p['title'] ?? 'Projet').toString(),
+                                    'projectLocation': (p['lieu'] ?? p['location'] ?? p['localisation'] ?? '-').toString(),
+                                    'projectBudget': p['budget'],
+                                  });
+                                } else {
+                                  context.push('/pro/proposition-create');
+                                }
+                              },
+                              onTap: () {
+                                final dynamic rawId = p['id'];
+                                int? pid;
+                                if (rawId is int) pid = rawId;
+                                if (rawId is String) pid = int.tryParse(rawId);
+                                if (pid != null) {
+                                  context.push('/pro/proposition-create', extra: {
+                                    'projectId': pid,
+                                    'projectTitle': (p['titre'] ?? p['title'] ?? 'Projet').toString(),
+                                    'projectLocation': (p['lieu'] ?? p['location'] ?? p['localisation'] ?? '-').toString(),
+                                    'projectBudget': p['budget'],
+                                  });
+                                } else {
+                                  context.push('/pro/proposition-create');
+                                }
+                              },
                               primary: const Color(0xFF3F51B5),
                             ),
                             const SizedBox(height: 12),
-                          ]
-                        ]
-                        ,
+                          ],
+                        ],
                         const SizedBox(height: 20),
-                        // En-tête section: Vos réalisations
                         Row(
                           children: [
                             Expanded(
@@ -289,7 +328,7 @@ class _ProHomePageState extends State<ProHomePage> {
                               ),
                             ),
                             TextButton(
-                              onPressed: () { context.go('/pro/realizations'); },
+                              onPressed: () => context.go('/pro/realizations'),
                               child: const Text('Voir tout'),
                             ),
                           ],
@@ -310,27 +349,26 @@ class _ProHomePageState extends State<ProHomePage> {
                                           width: 200,
                                           height: 140,
                                           color: Colors.white,
-                                          child: (r is Map && r['imageUrl'] != null)
-                                              ? Image.network(
-                                                  r['imageUrl'].toString(),
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (context, error, stack) {
-                                                    return Container(
-                                                      color: const Color(0xFFF5F5F5),
-                                                      alignment: Alignment.center,
-                                                      child: Text(
-                                                        'Image manquante',
-                                                        style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF64748B)),
-                                                      ),
-                                                    );
-                                                  },
-                                                )
-                                              : Center(
-                                                  child: Text(
-                                                    (r is Map && r['titre'] != null) ? r['titre'].toString() : 'Réalisation',
-                                                    style: theme.textTheme.bodySmall,
-                                                  ),
-                                                ),
+                                          child: () {
+                                            String? rawUrl;
+                                            String? title;
+                                            if (r is String) {
+                                              rawUrl = r;
+                                            } else if (r is Map) {
+                                              rawUrl = (r['imageUrl'] ?? r['url'] ?? r['image'])?.toString();
+                                              title = (r['titre'] ?? r['title'])?.toString();
+                                            }
+                                            final resolved = _absUrl(rawUrl);
+                                            if (resolved != null) {
+                                              return AuthImage(url: resolved, fit: BoxFit.cover);
+                                            }
+                                            return Center(
+                                              child: Text(
+                                                title ?? 'Réalisation',
+                                                style: theme.textTheme.bodySmall,
+                                              ),
+                                            );
+                                          }(),
                                         ),
                                       ),
                                     ),

@@ -131,11 +131,14 @@ class _ProProjectsPageState extends State<ProProjectsPage> {
                   itemBuilder: (context, index) {
                     final it = items[index] as Map;
                     final title = (it['titre'] ?? it['title'] ?? 'Projet').toString();
-                    final location = (it['lieu'] ?? it['location'] ?? '-').toString();
+                    final location = (it['lieu'] ?? it['location'] ?? it['localisation'] ?? '-').toString();
                     final budget = (it['budget'] ?? '-').toString();
                     final dateText = (it['dateCreation'] ?? it['date'] ?? '').toString();
                     final author = (it['auteur'] ?? it['author'] ?? '').toString();
-                    return _ProjectCard(item: _ProjectItem(title: title, location: location, budget: budget, dateText: dateText, author: author));
+                    final id = it['id'] is int ? it['id'] as int : int.tryParse((it['id'] ?? '').toString());
+                    return _ProjectCard(
+                      item: _ProjectItem(id: id, title: title, location: location, budget: budget, dateText: dateText, author: author),
+                    );
                   },
                 ),
               ),
@@ -153,7 +156,7 @@ class _ProProjectsPageState extends State<ProProjectsPage> {
     return all.where((e) {
       if (e is Map) {
         final title = (e['titre'] ?? e['title'] ?? '').toString().toLowerCase();
-        final loc = (e['lieu'] ?? e['location'] ?? '').toString().toLowerCase();
+        final loc = (e['lieu'] ?? e['location'] ?? e['localisation'] ?? '').toString().toLowerCase();
         final author = (e['auteur'] ?? e['author'] ?? '').toString().toLowerCase();
         return title.contains(lq) || loc.contains(lq) || author.contains(lq);
       }
@@ -216,7 +219,22 @@ class _ProjectCard extends StatelessWidget {
                 height: 50,
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => context.push('/pro/proposition-create'),
+                  onPressed: () {
+                    if (item.id != null) {
+                      context.push('/pro/proposition-create', extra: {
+                        'projectId': item.id,
+                        'projectTitle': item.title,
+                        'projectLocation': item.location,
+                        'projectBudget': item.budget,
+                      });
+                    } else {
+                      context.push('/pro/proposition-create', extra: {
+                        'projectTitle': item.title,
+                        'projectLocation': item.location,
+                        'projectBudget': item.budget,
+                      });
+                    }
+                  },
                   icon: const Icon(Icons.send, size: 16),
                   label: const Text('Faire une proposition'),
                   style: ElevatedButton.styleFrom(
@@ -226,14 +244,6 @@ class _ProjectCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              // Auteur du projet
-              Row(
-                children: [
-                  const Icon(Icons.badge_outlined, size: 16, color: Color(0xFF0F172A)),
-                  const SizedBox(width: 6),
-                  Text(item.author, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF4B5563))),
-                ],
-              ),
             ],
           ),
         ),
@@ -244,7 +254,8 @@ class _ProjectCard extends StatelessWidget {
 
 /// Modèle léger pour un projet.
 class _ProjectItem {
-  const _ProjectItem({required this.title, required this.location, required this.budget, required this.dateText, required this.author});
+  const _ProjectItem({this.id, required this.title, required this.location, required this.budget, required this.dateText, required this.author});
+  final int? id;
   final String title;
   final String location;
   final String budget;

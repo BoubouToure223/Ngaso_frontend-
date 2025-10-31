@@ -165,7 +165,27 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/pro/proposition-create',
           builder: (BuildContext context, GoRouterState state) {
-            return const ProProposalCreatePage();
+            int? projectId;
+            String? projectTitle;
+            String? projectLocation;
+            dynamic projectBudget;
+            final extra = state.extra;
+            if (extra is Map) {
+              final v = extra['projectId'];
+              if (v is int) projectId = v;
+              if (v is String) projectId = int.tryParse(v);
+              final t = extra['projectTitle'];
+              if (t is String) projectTitle = t;
+              final loc = extra['projectLocation'] ?? extra['localisation'] ?? extra['location'];
+              if (loc is String) projectLocation = loc;
+              projectBudget = extra['projectBudget'] ?? extra['budget'];
+            }
+            return ProProposalCreatePage(
+              projectId: projectId,
+              initialTitle: projectTitle,
+              initialLocation: projectLocation,
+              initialBudget: projectBudget,
+            );
           },
         ),
         GoRoute(

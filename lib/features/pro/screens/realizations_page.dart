@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:myapp/core/data/services/pro_api_service.dart';
+import 'package:myapp/core/network/api_config.dart';
+import 'package:myapp/core/widgets/auth_image.dart';
 
 /// Page Pro: vos réalisations (galerie d'images mock).
 ///
@@ -16,6 +18,15 @@ class ProRealizationsPage extends StatefulWidget {
 
 class _ProRealizationsPageState extends State<ProRealizationsPage> {
   late Future<List<dynamic>> _future;
+
+  String? _absUrl(String? u) {
+    if (u == null || u.isEmpty) return null;
+    if (u.startsWith('http://') || u.startsWith('https://')) return u;
+    final base = Uri.parse(ApiConfig.baseUrl);
+    final origin = '${base.scheme}://${base.host}${base.hasPort ? ':${base.port}' : ''}';
+    if (u.startsWith('/')) return '$origin$u';
+    return '$origin/$u';
+  }
 
   @override
   void initState() {
@@ -77,22 +88,19 @@ class _ProRealizationsPageState extends State<ProRealizationsPage> {
               final it = items[index];
               String? imageUrl;
               String? title;
-              if (it is Map) {
-                imageUrl = it['imageUrl']?.toString();
+              if (it is String) {
+                imageUrl = it;
+              } else if (it is Map) {
+                imageUrl = (it['imageUrl'] ?? it['url'] ?? it['image'])?.toString();
                 title = (it['titre'] ?? it['title'])?.toString();
               }
+              final resolved = _absUrl(imageUrl);
               return ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
                   color: Colors.white,
-                  child: imageUrl != null && imageUrl.isNotEmpty
-                      ? Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stack) {
-                            return _ImageFallback(title: title);
-                          },
-                        )
+                  child: resolved != null && resolved.isNotEmpty
+                      ? AuthImage(url: resolved, fit: BoxFit.cover)
                       : _ImageFallback(title: title),
                 ),
               );
@@ -119,7 +127,13 @@ class _ProRealizationsPageState extends State<ProRealizationsPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) => const _AddRealizationSheet(),
-    );
+    ).then((added) {
+      if (added == true) {
+        setState(() {
+          _future = ProApiService().getMyRealisationsItems();
+        });
+      }
+    });
   }
 }
 
@@ -170,14 +184,37 @@ class _AddRealizationSheetState extends State<_AddRealizationSheet> {
     if (picked != null) setState(() => _startDate = picked);
   }
 
-  /// Vérifie les champs obligatoires et soumet (mock).
-  void _submit() {
+  /// Vérifie les champs obligatoires et soumet en uploadant la première image.
+  Future<void> _submit() async {
     if (_titleCtrl.text.trim().isEmpty || _locationCtrl.text.trim().isEmpty || _descCtrl.text.trim().isEmpty || _files.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez remplir tous les champs obligatoires')));
       return;
     }
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Réalisation publiée (mock)')));
+    final first = _files.first;
+    final path = first.path;
+    if (path == null || path.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire le fichier sélectionné')));
+      return;
+    }
+    String? mime;
+    final ext = first.extension?.toLowerCase();
+    if (ext == 'jpg' || ext == 'jpeg') mime = 'image/jpeg';
+    if (ext == 'png') mime = 'image/png';
+    if (ext == 'webp') mime = 'image/webp';
+
+    try {
+      final items = await ProApiService().uploadMyRealisationImage(
+        filePath: path,
+        fileName: first.name,
+        mimeType: mime,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Réalisation publiée')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de l\'upload: $e')));
+    }
   }
 
   @override
