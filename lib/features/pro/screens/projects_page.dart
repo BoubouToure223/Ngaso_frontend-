@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/core/data/services/pro_api_service.dart';
+import 'package:intl/intl.dart';
 
 /// Page Pro: liste des projets disponibles.
 ///
@@ -133,7 +134,16 @@ class _ProProjectsPageState extends State<ProProjectsPage> {
                     final title = (it['titre'] ?? it['title'] ?? 'Projet').toString();
                     final location = (it['lieu'] ?? it['location'] ?? it['localisation'] ?? '-').toString();
                     final budget = (it['budget'] ?? '-').toString();
-                    final dateText = (it['dateCreation'] ?? it['date'] ?? '').toString();
+                    final rawDate = (it['dateCreation'] ?? it['date'] ?? '').toString();
+                    final String dateText = (() {
+                      if (rawDate.isEmpty) return '-';
+                      try {
+                        final dt = DateTime.parse(rawDate).toLocal();
+                        return DateFormat('dd/MM/yyyy HH:mm').format(dt);
+                      } catch (_) {
+                        return rawDate;
+                      }
+                    })();
                     final author = (it['auteur'] ?? it['author'] ?? '').toString();
                     final id = it['id'] is int ? it['id'] as int : int.tryParse((it['id'] ?? '').toString());
                     return _ProjectCard(

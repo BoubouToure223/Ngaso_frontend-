@@ -111,4 +111,17 @@ class ProApiService {
     if (resp is Map<String, dynamic>) return resp;
     return Map<String, dynamic>.from(resp as Map);
   }
+
+  Future<List<dynamic>> getMyPropositions({String? statut}) async {
+    final res = await _dio.get(
+      '/professionnels/me/propositions',
+      queryParameters: {
+        if (statut != null) 'statut': statut,
+      },
+    );
+    final data = res.data;
+    if (data is List) return data;
+    if (data is Map && data['content'] is List) return List.from(data['content']);
+    return const [];
+  }
 }

@@ -6,6 +6,7 @@ import 'package:myapp/core/data/models/pro_dashboard.dart';
 import 'package:myapp/core/storage/token_storage.dart';
 import 'package:myapp/core/network/api_config.dart';
 import 'package:myapp/core/widgets/auth_image.dart';
+import 'package:intl/intl.dart';
 
 /// Page d'accueil (Espace Pro).
 ///
@@ -280,7 +281,16 @@ class _ProHomePageState extends State<ProHomePage> {
                               title: (p['titre'] ?? p['title'] ?? 'Projet').toString(),
                               location: (p['lieu'] ?? p['location'] ?? p['localisation'] ?? '-').toString(),
                               budget: (p['budget'] ?? '-').toString(),
-                              dateText: (p['dateCreation'] ?? p['date'] ?? '').toString(),
+                              dateText: (() {
+                                final raw = (p['dateCreation'] ?? p['date'] ?? '').toString();
+                                if (raw.isEmpty) return '-';
+                                try {
+                                  final dt = DateTime.parse(raw).toLocal();
+                                  return DateFormat('dd/MM/yyyy HH:mm').format(dt);
+                                } catch (_) {
+                                  return raw;
+                                }
+                              })(),
                               onPropose: () {
                                 final dynamic rawId = p['id'];
                                 int? pid;
