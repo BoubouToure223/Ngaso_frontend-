@@ -196,7 +196,9 @@ class _ProProposalCreatePageState extends State<ProProposalCreatePage> {
                       Text('Budget: ${_formatBudget(widget.initialBudget)}', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF4B5563))),
                       const SizedBox(height: 4),
                     ],
-                    if (widget.initialLocation != null)
+                    if ((widget.initialLocation ?? '').trim().isNotEmpty &&
+                        (widget.initialLocation ?? '').trim() != '—' &&
+                        (widget.initialLocation ?? '').trim() != '-')
                       Text('Localité: ${widget.initialLocation}', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF4B5563))),
                   ],
                 ),
@@ -234,7 +236,8 @@ class _ProProposalCreatePageState extends State<ProProposalCreatePage> {
                   }
                   final p = snap.data!;
                   final titre = (p['titre'] ?? p['title'] ?? 'Projet').toString();
-                  final loc = (p['localisation'] ?? p['lieu'] ?? p['location'] ?? '-').toString();
+                  final rawLoc = (p['localisation'] ?? p['lieu'] ?? p['location'])?.toString();
+                  final loc = (rawLoc == null || rawLoc.trim().isEmpty || rawLoc.trim() == '-' || rawLoc.trim() == '—') ? '' : rawLoc;
                   final budgetVal = p['budget'];
                   final budget = budgetVal == null ? '' : _formatBudget(budgetVal);
                   return Container(
@@ -250,7 +253,8 @@ class _ProProposalCreatePageState extends State<ProProposalCreatePage> {
                           Text('Budget: $budget', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF4B5563))),
                           const SizedBox(height: 4),
                         ],
-                        Text('Localité: $loc', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF4B5563))),
+                        if (loc.trim().isNotEmpty)
+                          Text('Localité: $loc', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF4B5563))),
                       ],
                     ),
                   );

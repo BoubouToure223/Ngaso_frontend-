@@ -206,11 +206,17 @@ final GoRouter router = GoRouter(
             final extra = state.extra;
             String? name;
             String? initials;
+            int? conversationId;
+            int? propositionId;
             if (extra is Map) {
               name = extra['name'] as String?;
               initials = extra['initials'] as String?;
+              final cid = extra['conversationId'];
+              if (cid is int) conversationId = cid; else if (cid is String) conversationId = int.tryParse(cid);
+              final pid = extra['propositionId'];
+              if (pid is int) propositionId = pid; else if (pid is String) propositionId = int.tryParse(pid);
             }
-            return ProChatPage(name: name, initials: initials);
+            return ProChatPage(name: name, initials: initials, conversationId: conversationId, propositionId: propositionId);
           },
         ),
       ],

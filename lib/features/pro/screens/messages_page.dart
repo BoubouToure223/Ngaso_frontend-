@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/services/pro_api_service.dart';
 
 /// Page Pro: liste des conversations et accès à la messagerie.
 ///
@@ -17,52 +18,74 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
   /// Contrôleur pour la recherche.
   final TextEditingController _searchCtrl = TextEditingController();
 
-  /// Conversations mock pour démonstration.
-  late final List<_Conversation> _all = [
-    _Conversation(
-      initials: 'AB',
-      name: 'Amadou Bakayoko',
-      last: 'Je peux passer demain pour voir le chantier.',
-      lastAt: DateTime.now().subtract(const Duration(minutes: 5)),
-      unread: 2,
-      online: true,
-    ),
-    _Conversation(
-      initials: 'EB',
-      name: 'Entreprise BTP Mali',
-      last: "Nous avons reçu votre devis et nous allons l'étudier.",
-      lastAt: DateTime.now().subtract(const Duration(hours: 20)),
-      unread: 0,
-    ),
-    _Conversation(
-      initials: 'FK',
-      name: 'Fatoumata Koné',
-      last: 'Merci pour votre disponibilité. À bientôt !',
-      lastAt: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
-      unread: 1,
-    ),
-    _Conversation(
-      initials: 'MD',
-      name: 'Mariam Diallo',
-      last: 'Je voudrais savoir si vous êtes disponible la semaine prochaine pour finir les travaux.',
-      lastAt: DateTime.now().subtract(const Duration(days: 2)),
-      unread: 0,
-    ),
-    _Conversation(
-      initials: 'SC',
-      name: 'Société de Carrelage',
-      last: 'Nous avons bien reçu votre paiement.',
-      lastAt: DateTime.now().subtract(const Duration(days: 3)),
-      unread: 3,
-    ),
-    _Conversation(
-      initials: 'IT',
-      name: 'Ibrahim Touré',
-      last: 'Est-ce que vous pourriez me donner un devis pour la rénovation de ma salle de bain ?',
-      lastAt: DateTime.now().subtract(const Duration(days: 5)),
-      unread: 0,
-    ),
-  ];
+  final ProApiService _api = ProApiService();
+  final List<_Conversation> _all = <_Conversation>[];
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchConversations();
+  }
+
+  Future<void> _fetchConversations() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final data = await _api.getMyConversations();
+      final items = data.map<_Conversation>((e) {
+        final m = e as Map;
+        final id = (m['id'] as num?)?.toInt() ?? 0;
+        final propositionId = (m['propositionId'] is num)
+            ? (m['propositionId'] as num).toInt()
+            : (m['propositionId'] is String ? int.tryParse(m['propositionId']) : null);
+        final last = (m['lastMessage'] as String?) ?? '';
+        final lastAtStr = (m['lastMessageAt'] as String?) ?? '';
+        DateTime lastAt;
+        try {
+          lastAt = lastAtStr.isNotEmpty ? DateTime.parse(lastAtStr).toLocal() : DateTime.now();
+        } catch (_) {
+          lastAt = DateTime.now();
+        }
+        final noviceNom = (m['noviceNom'] ?? m['nom'] ?? m['lastname'] ?? m['lastName'])?.toString();
+        final novicePrenom = (m['novicePrenom'] ?? m['prenom'] ?? m['firstname'] ?? m['firstName'])?.toString();
+        String displayName = '';
+        if (noviceNom != null && noviceNom.trim().isNotEmpty) displayName = noviceNom.trim();
+        if (novicePrenom != null && novicePrenom.trim().isNotEmpty) {
+          displayName = displayName.isEmpty ? novicePrenom.trim() : '$displayName ${novicePrenom.trim()}';
+        }
+        if (displayName.isEmpty) displayName = (m['name'] as String?)?.toString() ?? '';
+        if (displayName.isEmpty) displayName = 'Conversation #$id';
+        final initials = _computeInitials(displayName);
+        final unread = 0;
+        final online = (m['active'] == true);
+        return _Conversation(
+          conversationId: id,
+          propositionId: propositionId,
+          initials: initials,
+          name: displayName,
+          last: last.isNotEmpty ? last : '—',
+          lastAt: lastAt,
+          unread: unread,
+          online: online,
+        );
+      }).toList(growable: false);
+      setState(() {
+        _all
+          ..clear()
+          ..addAll(items);
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +105,11 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
         child: Column(
           children: [
+            if (_loading) const LinearProgressIndicator(),
+            if (_error != null) Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(_error!, style: const TextStyle(color: Colors.red)),
+            ),
             // Barre de recherche
             Row(
               children: [
@@ -106,7 +134,7 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
               ],
             ),
             const SizedBox(height: 12),
-            if (filtered.isEmpty)
+            if (!_loading && filtered.isEmpty)
               // État vide (aucune conversation)
               const Expanded(
                 child: _EmptyState(
@@ -175,7 +203,12 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
         conv.unread = 0;
       });
     }
-    await context.push('/pro/chat', extra: {'name': conv.name, 'initials': conv.initials});
+    await context.push('/pro/chat', extra: {
+      'name': conv.name,
+      'initials': conv.initials,
+      'conversationId': conv.conversationId,
+      if (conv.propositionId != null) 'propositionId': conv.propositionId,
+    });
     setState(() {});
   }
 }
@@ -257,6 +290,8 @@ class _ConversationTile extends StatelessWidget {
 /// Modèle d'une conversation.
 class _Conversation {
   _Conversation({
+    required this.conversationId,
+    this.propositionId,
     required this.initials,
     required this.name,
     required this.last,
@@ -264,12 +299,21 @@ class _Conversation {
     this.unread = 0,
     this.online = false,
   });
+  final int conversationId;
+  final int? propositionId;
   final String initials;
   final String name;
   final String last;
   final DateTime lastAt;
   int unread;
   final bool online;
+}
+
+String _computeInitials(String name) {
+  final parts = name.trim().split(RegExp(r"\s+")).where((s) => s.isNotEmpty).toList();
+  if (parts.isEmpty) return 'CN';
+  if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+  return (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
 }
 
 /// État vide avec émoji, titre et sous-titre.

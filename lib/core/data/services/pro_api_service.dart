@@ -124,4 +124,82 @@ class ProApiService {
     if (data is Map && data['content'] is List) return List.from(data['content']);
     return const [];
   }
+
+  Future<List<dynamic>> getMyDemandes({String? statut}) async {
+    final res = await _dio.get(
+      '/professionnels/me/demandes',
+      queryParameters: {
+        if (statut != null) 'statut': statut,
+      },
+    );
+    final data = res.data;
+    if (data is List) return data;
+    if (data is Map && data['content'] is List) return List.from(data['content']);
+    return const [];
+  }
+
+  Future<void> validateDemande(int demandeId) async {
+    await _dio.post('/professionnels/me/demandes/$demandeId/validate');
+  }
+
+  Future<void> refuseDemande(int demandeId) async {
+    await _dio.post('/professionnels/me/demandes/$demandeId/refuse');
+  }
+
+  Future<List<dynamic>> getMyConversations() async {
+    final res = await _dio.get('/conversations/me');
+    final data = res.data;
+    if (data is List) return data;
+    if (data is Map && data['content'] is List) return List.from(data['content']);
+    return const [];
+  }
+
+  Future<List<dynamic>> getConversationMessages({
+    required int conversationId,
+    int page = 0,
+    int size = 20,
+  }) async {
+    final res = await _dio.get(
+      '/conversations/$conversationId/messages',
+      queryParameters: {'page': page, 'size': size},
+    );
+    final data = res.data;
+    if (data is List) return data;
+    if (data is Map && data['content'] is List) return List.from(data['content']);
+    return const [];
+  }
+
+  Future<Map<String, dynamic>> sendConversationMessage({
+    required int conversationId,
+    required String content,
+  }) async {
+    final res = await _dio.post(
+      '/conversations/$conversationId/messages',
+      data: {'content': content},
+    );
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  Future<Map<String, dynamic>> sendConversationAttachment({
+    required int conversationId,
+    required String filePath,
+    String? fileName,
+    String? mimeType,
+    String? content,
+  }) async {
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        filePath,
+        filename: fileName,
+        contentType: mimeType != null ? MediaType.parse(mimeType) : null,
+      ),
+      if (content != null) 'content': content,
+    });
+    final res = await _dio.post('/conversations/$conversationId/messages/upload', data: form);
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    return Map<String, dynamic>.from(data as Map);
+  }
 }

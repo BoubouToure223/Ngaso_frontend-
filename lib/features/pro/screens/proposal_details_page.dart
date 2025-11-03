@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/data/services/pro_api_service.dart';
 import 'package:intl/intl.dart';
+import '../../../core/data/services/pro_api_service.dart';
 
 /// Page listant les propositions envoyées par le professionnel avec
 /// filtres (Toutes, En attente, Validées, Rejetées) et actions contextuelles.
@@ -82,7 +82,20 @@ class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
             (map['titreProjet'] as String?) ??
             (map['nomProjet'] as String?) ??
             (map['projectTitle'] as String?);
-        final author = [pro['nom'], pro['prenom']].whereType<String>().where((s) => s.isNotEmpty).join(' ').trim();
+        final noviceNom = map['noviceNom'] as String?;
+        final novicePrenom = map['novicePrenom'] as String?;
+        final authorFromNovice = [noviceNom, novicePrenom]
+            .whereType<String>()
+            .where((s) => s.isNotEmpty)
+            .join(' ')
+            .trim();
+        final author = authorFromNovice.isNotEmpty
+            ? authorFromNovice
+            : [pro['nom'], pro['prenom']]
+                .whereType<String>()
+                .where((s) => s.isNotEmpty)
+                .join(' ')
+                .trim();
         final iso = map['dateProposition'] as String?;
         final String sentDate = (() {
           if (iso == null || iso.isEmpty) return '-';
