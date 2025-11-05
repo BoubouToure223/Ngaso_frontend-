@@ -1,27 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:myapp/core/data/services/pro_api_service.dart';
+import 'package:myapp/core/network/api_config.dart';
+import 'package:myapp/core/widgets/auth_image.dart';
 
 /// Page Pro: vos réalisations (galerie d'images mock).
 ///
 /// - Grille d'images (assets) avec gestion d'erreur d'affichage.
 /// - Bouton flottant pour ajouter une réalisation (ouvre une bottom sheet).
-class ProRealizationsPage extends StatelessWidget {
+class ProRealizationsPage extends StatefulWidget {
   const ProRealizationsPage({super.key});
+
+  @override
+  State<ProRealizationsPage> createState() => _ProRealizationsPageState();
+}
+
+class _ProRealizationsPageState extends State<ProRealizationsPage> {
+  late Future<List<dynamic>> _future;
+
+  String? _absUrl(String? u) {
+    if (u == null || u.isEmpty) return null;
+    if (u.startsWith('http://') || u.startsWith('https://')) return u;
+    final base = Uri.parse(ApiConfig.baseUrl);
+    final origin = '${base.scheme}://${base.host}${base.hasPort ? ':${base.port}' : ''}';
+    if (u.startsWith('/')) return '$origin$u';
+    return '$origin/$u';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ProApiService().getMyRealisationsItems();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    /// Liste mock des chemins d'images.
-    final images = const [
-      'assets/images/onboarding_1.png',
-      'assets/images/onboarding_2.png',
-      'assets/images/onboarding_3.png',
-      'assets/images/onboarding_1.png',
-      'assets/images/onboarding_2.png',
-      'assets/images/onboarding_3.png',
-    ];
-
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -31,38 +46,65 @@ class ProRealizationsPage extends StatelessWidget {
         title: const Text('Vos réalisations'),
         centerTitle: false,
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        // Grille 2 colonnes, espacements et ratio configurés
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.3,
-        ),
-        itemCount: images.length,
-        itemBuilder: (context, index) {
-          final path = images[index];
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              color: Colors.white,
-              child: Image.asset(
-                path,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stack) {
-                  // Placeholder en cas d'image manquante
-                  return Container(
-                    color: const Color(0xFFF5F5F5),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Image manquante',
-                      style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF64748B)),
-                    ),
-                  );
-                },
+      body: FutureBuilder<List<dynamic>>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snap.hasError) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Erreur', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Text(snap.error.toString(), style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF64748B))),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: () => setState(() => _future = ProApiService().getMyRealisationsItems()),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Réessayer'),
+                  ),
+                ],
               ),
+            );
+          }
+          final items = snap.data ?? const [];
+          if (items.isEmpty) {
+            return const _EmptyState();
+          }
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.3,
             ),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final it = items[index];
+              String? imageUrl;
+              String? title;
+              if (it is String) {
+                imageUrl = it;
+              } else if (it is Map) {
+                imageUrl = (it['imageUrl'] ?? it['url'] ?? it['image'])?.toString();
+                title = (it['titre'] ?? it['title'])?.toString();
+              }
+              final resolved = _absUrl(imageUrl);
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  color: Colors.white,
+                  child: resolved != null && resolved.isNotEmpty
+                      ? AuthImage(url: resolved, fit: BoxFit.cover)
+                      : _ImageFallback(title: title),
+                ),
+              );
+            },
           );
         },
       ),
@@ -85,7 +127,13 @@ class ProRealizationsPage extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) => const _AddRealizationSheet(),
-    );
+    ).then((added) {
+      if (added == true) {
+        setState(() {
+          _future = ProApiService().getMyRealisationsItems();
+        });
+      }
+    });
   }
 }
 
@@ -136,14 +184,37 @@ class _AddRealizationSheetState extends State<_AddRealizationSheet> {
     if (picked != null) setState(() => _startDate = picked);
   }
 
-  /// Vérifie les champs obligatoires et soumet (mock).
-  void _submit() {
+  /// Vérifie les champs obligatoires et soumet en uploadant la première image.
+  Future<void> _submit() async {
     if (_titleCtrl.text.trim().isEmpty || _locationCtrl.text.trim().isEmpty || _descCtrl.text.trim().isEmpty || _files.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez remplir tous les champs obligatoires')));
       return;
     }
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Réalisation publiée (mock)')));
+    final first = _files.first;
+    final path = first.path;
+    if (path == null || path.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire le fichier sélectionné')));
+      return;
+    }
+    String? mime;
+    final ext = first.extension?.toLowerCase();
+    if (ext == 'jpg' || ext == 'jpeg') mime = 'image/jpeg';
+    if (ext == 'png') mime = 'image/png';
+    if (ext == 'webp') mime = 'image/webp';
+
+    try {
+      final items = await ProApiService().uploadMyRealisationImage(
+        filePath: path,
+        fileName: first.name,
+        mimeType: mime,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Réalisation publiée')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de l\'upload: $e')));
+    }
   }
 
   @override
@@ -251,6 +322,47 @@ class _AddRealizationSheetState extends State<_AddRealizationSheet> {
       fillColor: const Color(0xFFF9FAFB),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('📷', style: TextStyle(fontSize: 36)),
+          const SizedBox(height: 8),
+          Text('Aucune réalisation', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text('Publiez vos premières réalisations pour les voir ici.', style: theme.textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+class _ImageFallback extends StatelessWidget {
+  const _ImageFallback({this.title});
+  final String? title;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      color: const Color(0xFFF5F5F5),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(8),
+      child: Text(
+        title ?? 'Réalisation',
+        style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF64748B)),
+        textAlign: TextAlign.center,
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
 }

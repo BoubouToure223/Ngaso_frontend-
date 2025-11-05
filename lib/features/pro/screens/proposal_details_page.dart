@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../../../core/data/services/pro_api_service.dart';
 
 /// Page listant les propositions envoyées par le professionnel avec
 /// filtres (Toutes, En attente, Validées, Rejetées) et actions contextuelles.
@@ -32,32 +34,105 @@ class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
   Color get slate => const Color(0xFF0F172A);
   Color get gray => const Color(0xFF6B7280);
 
-  // Source de données simple (mock) pour afficher et filtrer
-  final List<_Item> _items = [
-    _Item(
-      status: _ProposalStatus.pending,
-      title: 'Construction de villa',
-      author: 'Oumar Touré',
-      description: 'Prise en charge des fondations',
-      sentDate: '16 juin 2023',
-    ),
-    _Item(
-      status: _ProposalStatus.validated,
-      title: 'Construction de villa',
-      author: 'Oumar Touré',
-      description: 'Prise en charge des fondations',
-      sentDate: '16 juin 2023',
-    ),
-    _Item(
-      status: _ProposalStatus.rejected,
-      title: 'Extension maison',
-      author: 'Boubou Touré',
-      description: 'Plan',
-      sentDate: '8 juin 2023',
-    ),
-  ];
+  final ProApiService _api = ProApiService();
+  final List<_Item> _items = [];
+  bool _loading = false;
+  String? _error;
 
   _ProposalStatus _filter = _ProposalStatus.all; // filtre sélectionné
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAll();
+  }
+
+  Future<void> _fetchAll() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final data = await _api.getMyPropositions();
+      final mapped = data.map<_Item>((e) {
+        final map = e as Map;
+        final statut = (map['statut'] as String?) ?? '';
+        _ProposalStatus status;
+        switch (statut) {
+          case 'EN_ATTENTE':
+            status = _ProposalStatus.pending;
+            break;
+          case 'ACCEPTER':
+            status = _ProposalStatus.validated;
+            break;
+          case 'REFUSER':
+          case 'ANNULER':
+            status = _ProposalStatus.rejected;
+            break;
+          default:
+            status = _ProposalStatus.pending;
+        }
+        final pro = (map['professionnel'] as Map?) ?? const {};
+        final projet = (map['projet'] as Map?) ?? const {};
+        final titleCandidate =
+            (map['projetTitre'] as String?) ??
+            (projet['titre'] as String?) ??
+            (projet['nom'] as String?) ??
+            (projet['title'] as String?) ??
+            (map['titreProjet'] as String?) ??
+            (map['nomProjet'] as String?) ??
+            (map['projectTitle'] as String?);
+        final noviceNom = map['noviceNom'] as String?;
+        final novicePrenom = map['novicePrenom'] as String?;
+        final authorFromNovice = [noviceNom, novicePrenom]
+            .whereType<String>()
+            .where((s) => s.isNotEmpty)
+            .join(' ')
+            .trim();
+        final author = authorFromNovice.isNotEmpty
+            ? authorFromNovice
+            : [pro['nom'], pro['prenom']]
+                .whereType<String>()
+                .where((s) => s.isNotEmpty)
+                .join(' ')
+                .trim();
+        final iso = map['dateProposition'] as String?;
+        final String sentDate = (() {
+          if (iso == null || iso.isEmpty) return '-';
+          try {
+            final dt = DateTime.parse(iso).toLocal();
+            return DateFormat('dd/MM/yyyy HH:mm').format(dt);
+          } catch (_) {
+            return '-';
+          }
+        })();
+        return _Item(
+          status: status,
+          title: (titleCandidate != null && titleCandidate.isNotEmpty)
+              ? titleCandidate
+              : 'Proposition #${map['id'] ?? ''}',
+          author: author.isEmpty ? '—' : author,
+          description: (map['description'] as String?) ?? '',
+          sentDate: sentDate,
+        );
+      }).toList(growable: false);
+      setState(() {
+        _items
+          ..clear()
+          ..addAll(mapped);
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +161,8 @@ class _ProProposalDetailsPageState extends State<ProProposalDetailsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (_loading) const LinearProgressIndicator(),
+          if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(_error!, style: const TextStyle(color: Colors.red))),
           // HEADER FILTRES
           // - 4 boutons: Toutes, attente, Validées, Rejetées
           // - Affiche les compteurs avec couleurs cohérentes

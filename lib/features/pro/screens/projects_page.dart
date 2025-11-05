@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/services/pro_api_service.dart';
+import 'package:intl/intl.dart';
 
 /// Page Pro: liste des projets disponibles.
 ///
@@ -12,44 +14,44 @@ class ProProjectsPage extends StatefulWidget {
   State<ProProjectsPage> createState() => _ProProjectsPageState();
 }
 
-class _ProProjectsPageState extends State<ProProjectsPage> {
-  /// Contrôleur de recherche.
-  final TextEditingController _searchCtrl = TextEditingController();
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message, required this.onRetry});
+  final String message;
+  final VoidCallback onRetry;
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Erreur', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Text(message, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF64748B))),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh, size: 16), label: const Text('Réessayer')),
+        ],
+      ),
+    );
+  }
+}
 
-  /// Données mock de projets.
-  final List<_ProjectItem> _items = const [
-    _ProjectItem(
-      title: 'Construction de Batiment',
-      location: 'ACI 2000',
-      budget: '2 000 000 FCFA',
-      dateText: 'Il y a 2 jours',
-      author: 'Fatoumata Koné',
-    ),
-    _ProjectItem(
-      title: 'Extension maison',
-      location: 'Bamako, ACI',
-      budget: '1 500 000 FCFA',
-      dateText: 'Il y a 3 jours',
-      author: 'Fatoumata Koné',
-    ),
-    _ProjectItem(
-      title: 'Rénovation cuisine',
-      location: 'Kalaban Coura',
-      budget: '800 000 FCFA',
-      dateText: 'Hier',
-      author: 'Fatoumata Koné',
-    ),
-  ];
+class _ProProjectsPageState extends State<ProProjectsPage> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  late Future<List<dynamic>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ProApiService().getProjectsEnCours();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final items = _filtered(_items, _searchCtrl.text);
-
     return Scaffold(
       backgroundColor: const Color(0xFFFCFAF7),
       appBar: AppBar(
-        // Retour accueil Pro
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/pro/home'),
@@ -57,7 +59,21 @@ class _ProProjectsPageState extends State<ProProjectsPage> {
         title: const Text('Projets'),
         centerTitle: false,
       ),
-      body: Padding(
+      body: FutureBuilder<List<dynamic>>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snap.hasError) {
+            return _ErrorState(message: snap.error.toString(), onRetry: () {
+              setState(() { _future = ProApiService().getProjectsEnCours(); });
+            });
+          }
+          final all = snap.data ?? const [];
+          final items = _filtered(all, _searchCtrl.text);
+
+          return Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
         child: Column(
           children: [
@@ -101,7 +117,6 @@ class _ProProjectsPageState extends State<ProProjectsPage> {
             ),
             const SizedBox(height: 16),
             if (items.isEmpty)
-              // État vide
               const Expanded(
                 child: _EmptyState(
                   emoji: '📂',
@@ -110,30 +125,53 @@ class _ProProjectsPageState extends State<ProProjectsPage> {
                 ),
               )
             else
-              // Liste des projets
               Expanded(
                 child: ListView.separated(
                   itemCount: items.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    final it = items[index];
-                    return _ProjectCard(item: it);
+                    final it = items[index] as Map;
+                    final title = (it['titre'] ?? it['title'] ?? 'Projet').toString();
+                    final location = (it['lieu'] ?? it['location'] ?? it['localisation'] ?? '-').toString();
+                    final budget = (it['budget'] ?? '-').toString();
+                    final rawDate = (it['dateCreation'] ?? it['date'] ?? '').toString();
+                    final String dateText = (() {
+                      if (rawDate.isEmpty) return '-';
+                      try {
+                        final dt = DateTime.parse(rawDate).toLocal();
+                        return DateFormat('dd/MM/yyyy HH:mm').format(dt);
+                      } catch (_) {
+                        return rawDate;
+                      }
+                    })();
+                    final author = (it['auteur'] ?? it['author'] ?? '').toString();
+                    final id = it['id'] is int ? it['id'] as int : int.tryParse((it['id'] ?? '').toString());
+                    return _ProjectCard(
+                      item: _ProjectItem(id: id, title: title, location: location, budget: budget, dateText: dateText, author: author),
+                    );
                   },
                 ),
               ),
           ],
         ),
+      );
+        },
       ),
     );
   }
 
-  /// Filtre les projets en fonction de la requête [q].
-  List<_ProjectItem> _filtered(List<_ProjectItem> all, String q) {
+  List<dynamic> _filtered(List<dynamic> all, String q) {
     if (q.trim().isEmpty) return all;
     final lq = q.toLowerCase();
-    return all
-        .where((e) => e.title.toLowerCase().contains(lq) || e.location.toLowerCase().contains(lq) || e.author.toLowerCase().contains(lq))
-        .toList(growable: false);
+    return all.where((e) {
+      if (e is Map) {
+        final title = (e['titre'] ?? e['title'] ?? '').toString().toLowerCase();
+        final loc = (e['lieu'] ?? e['location'] ?? e['localisation'] ?? '').toString().toLowerCase();
+        final author = (e['auteur'] ?? e['author'] ?? '').toString().toLowerCase();
+        return title.contains(lq) || loc.contains(lq) || author.contains(lq);
+      }
+      return false;
+    }).toList(growable: false);
   }
 }
 
@@ -191,7 +229,22 @@ class _ProjectCard extends StatelessWidget {
                 height: 50,
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => context.push('/pro/proposition-create'),
+                  onPressed: () {
+                    if (item.id != null) {
+                      context.push('/pro/proposition-create', extra: {
+                        'projectId': item.id,
+                        'projectTitle': item.title,
+                        'projectLocation': item.location,
+                        'projectBudget': item.budget,
+                      });
+                    } else {
+                      context.push('/pro/proposition-create', extra: {
+                        'projectTitle': item.title,
+                        'projectLocation': item.location,
+                        'projectBudget': item.budget,
+                      });
+                    }
+                  },
                   icon: const Icon(Icons.send, size: 16),
                   label: const Text('Faire une proposition'),
                   style: ElevatedButton.styleFrom(
@@ -201,14 +254,6 @@ class _ProjectCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              // Auteur du projet
-              Row(
-                children: [
-                  const Icon(Icons.badge_outlined, size: 16, color: Color(0xFF0F172A)),
-                  const SizedBox(width: 6),
-                  Text(item.author, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF4B5563))),
-                ],
-              ),
             ],
           ),
         ),
@@ -219,7 +264,8 @@ class _ProjectCard extends StatelessWidget {
 
 /// Modèle léger pour un projet.
 class _ProjectItem {
-  const _ProjectItem({required this.title, required this.location, required this.budget, required this.dateText, required this.author});
+  const _ProjectItem({this.id, required this.title, required this.location, required this.budget, required this.dateText, required this.author});
+  final int? id;
   final String title;
   final String location;
   final String budget;

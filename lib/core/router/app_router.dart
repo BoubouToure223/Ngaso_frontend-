@@ -58,7 +58,9 @@ final GoRouter router = GoRouter(
     // La route initiale de l'application.
     GoRoute(
       path: '/',
-      redirect: (BuildContext context, GoRouterState state) => '/Novice/home',
+      redirect: (BuildContext context, GoRouterState state) {
+        return '/splash';
+      }
     ),
     // La route pour la page splash.
     GoRoute(
@@ -124,7 +126,14 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/pro/home',
           builder: (BuildContext context, GoRouterState state) {
-            return const ProHomePage();
+            int? proId;
+            final extra = state.extra;
+            if (extra is Map) {
+              final v = extra['professionnelId'];
+              if (v is int) proId = v;
+              if (v is String) proId = int.tryParse(v);
+            }
+            return ProHomePage(professionnelId: proId ?? 0);
           },
         ),
         GoRoute(
@@ -166,7 +175,27 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/pro/proposition-create',
           builder: (BuildContext context, GoRouterState state) {
-            return const ProProposalCreatePage();
+            int? projectId;
+            String? projectTitle;
+            String? projectLocation;
+            dynamic projectBudget;
+            final extra = state.extra;
+            if (extra is Map) {
+              final v = extra['projectId'];
+              if (v is int) projectId = v;
+              if (v is String) projectId = int.tryParse(v);
+              final t = extra['projectTitle'];
+              if (t is String) projectTitle = t;
+              final loc = extra['projectLocation'] ?? extra['localisation'] ?? extra['location'];
+              if (loc is String) projectLocation = loc;
+              projectBudget = extra['projectBudget'] ?? extra['budget'];
+            }
+            return ProProposalCreatePage(
+              projectId: projectId,
+              initialTitle: projectTitle,
+              initialLocation: projectLocation,
+              initialBudget: projectBudget,
+            );
           },
         ),
         GoRoute(
@@ -187,11 +216,17 @@ final GoRouter router = GoRouter(
             final extra = state.extra;
             String? name;
             String? initials;
+            int? conversationId;
+            int? propositionId;
             if (extra is Map) {
               name = extra['name'] as String?;
               initials = extra['initials'] as String?;
+              final cid = extra['conversationId'];
+              if (cid is int) conversationId = cid; else if (cid is String) conversationId = int.tryParse(cid);
+              final pid = extra['propositionId'];
+              if (pid is int) propositionId = pid; else if (pid is String) propositionId = int.tryParse(pid);
             }
-            return ProChatPage(name: name, initials: initials);
+            return ProChatPage(name: name, initials: initials, conversationId: conversationId, propositionId: propositionId);
           },
         ),
       ],

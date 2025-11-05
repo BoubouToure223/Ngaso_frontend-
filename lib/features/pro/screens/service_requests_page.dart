@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../../../core/data/services/pro_api_service.dart';
 
 /// Page "Mes demandes" (Espace Pro).
 ///
@@ -19,39 +21,154 @@ class ProServiceRequestsPage extends StatefulWidget {
 /// - Construit l'interface en fonction du statut de chaque demande.
 /// - Met à jour l'état (acceptée/rejetée) au clic sur les boutons.
 class _ProServiceRequestsPageState extends State<ProServiceRequestsPage> {
-  /// Liste en mémoire des demandes de service (mock pour démonstration UI).
-  final List<_ServiceRequest> _items = <_ServiceRequest>[
-    const _ServiceRequest(
-      initials: 'MK',
-      name: 'Mamadou Koné',
-      titleLine1: "Construction d'une",
-      titleLine2: 'maison familiale',
-      location: 'Bamako, ACI 2000',
-      sentDate: '22 octobre 2025',
-      sizeText: '300m².',
-      status: _RequestStatus.pending,
-    ),
-    const _ServiceRequest(
-      initials: 'IT',
-      name: 'Ibrahim Traoré',
-      titleLine1: "Construction d'un mur de",
-      titleLine2: 'clôture',
-      location: 'Bamako, Kalaban Coura',
-      sentDate: '20 octobre 2025',
-      sizeText: null,
-      status: _RequestStatus.accepted,
-    ),
-    const _ServiceRequest(
-      initials: 'AS',
-      name: 'Aminata Sangaré',
-      titleLine1: 'Extension de bâtiment',
-      titleLine2: null,
-      location: 'Bamako, Magnambougou',
-      sentDate: '19 octobre 2025',
-      sizeText: null,
-      status: _RequestStatus.rejected,
-    ),
-  ];
+  final ProApiService _api = ProApiService();
+  final List<_ServiceRequest> _items = <_ServiceRequest>[];
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRequests();
+  }
+
+  Future<void> _rejectDemande({required int demandeId, required int itemIndex}) async {
+    try {
+      await _api.refuseDemande(demandeId);
+      if (!mounted) return;
+      setState(() {
+        _items[itemIndex] = _items[itemIndex].copyWith(status: _RequestStatus.rejected);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Demande rejetée')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+    }
+  }
+
+  Future<void> _acceptDemande({required int demandeId, required int itemIndex}) async {
+    try {
+      await _api.validateDemande(demandeId);
+      if (!mounted) return;
+      setState(() {
+        _items[itemIndex] = _items[itemIndex].copyWith(status: _RequestStatus.accepted);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Demande acceptée')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+    }
+  }
+
+  Future<void> _fetchRequests() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final data = await _api.getMyDemandes();
+      final mapped = data.map<_ServiceRequest>((e) {
+        final m = e as Map;
+        final id = (m['id'] as num?)?.toInt() ?? 0;
+        final statut = (m['statut'] as String?) ?? '';
+        _RequestStatus status;
+        switch (statut) {
+          case 'EN_ATTENTE':
+            status = _RequestStatus.pending;
+            break;
+          case 'ACCEPTER':
+            status = _RequestStatus.accepted;
+            break;
+          case 'REFUSER':
+          case 'ANNULER':
+            status = _RequestStatus.rejected;
+            break;
+          default:
+            status = _RequestStatus.pending;
+        }
+        final noviceNom = m['noviceNom'] as String?;
+        final novicePrenom = m['novicePrenom'] as String?;
+        final name = [noviceNom, novicePrenom]
+            .whereType<String>()
+            .where((s) => s.isNotEmpty)
+            .join(' ')
+            .trim();
+        final initials = ([noviceNom, novicePrenom]
+                .whereType<String>()
+                .where((s) => s.isNotEmpty)
+                .map((s) => s.trim()[0].toUpperCase())
+                .take(2)
+                .join())
+            .padRight(2, '*');
+        final projetTitre = (m['projetTitre'] as String?) ?? '';
+        // Essayer d'extraire l'identifiant projet et budget si présents
+        final int? projetId = (() {
+          final v1 = m['projetId'];
+          if (v1 is num) return v1.toInt();
+          if (v1 is String) return int.tryParse(v1);
+          final v2 = m['idProjet'];
+          if (v2 is num) return v2.toInt();
+          if (v2 is String) return int.tryParse(v2);
+          final p = m['projet'];
+          if (p is Map) {
+            final pid = p['id'];
+            if (pid is num) return pid.toInt();
+            if (pid is String) return int.tryParse(pid);
+          }
+          return null;
+        })();
+        final projectBudget = m['budget'] ?? m['projetBudget'] ?? (m['projet'] is Map ? (m['projet']['budget']) : null);
+        final etapeModeleNom = (m['etapeModeleNom'] as String?) ?? '';
+        final message = (m['message'] as String?) ?? '';
+        final localite =
+            (m['localite'] as String?) ??
+            (m['localiteNom'] as String?) ??
+            (m['locality'] as String?) ??
+            (m['lieu'] as String?) ??
+            '';
+        final iso = m['dateCreation'] as String?;
+        final sentDate = (() {
+          if (iso == null || iso.isEmpty) return '-';
+          try {
+            final dt = DateTime.parse(iso).toLocal();
+            return DateFormat('dd/MM/yyyy HH:mm').format(dt);
+          } catch (_) {
+            return '-';
+          }
+        })();
+        return _ServiceRequest(
+          id: id,
+          initials: initials,
+          name: name.isEmpty ? '—' : name,
+          titleLine1: projetTitre.isNotEmpty ? projetTitre : '—',
+          titleLine2: null,
+          location: localite,
+          sentDate: sentDate,
+          sizeText: null,
+          message: message,
+          stepLabel: etapeModeleNom.isNotEmpty ? etapeModeleNom : null,
+          status: status,
+          projectId: projetId,
+          projectBudget: projectBudget,
+        );
+      }).toList(growable: false);
+      setState(() {
+        _items
+          ..clear()
+          ..addAll(mapped);
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -68,10 +185,17 @@ class _ProServiceRequestsPageState extends State<ProServiceRequestsPage> {
       // Corps: liste des cartes de demandes avec séparateurs verticaux
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
-        itemCount: _items.length,
+        itemCount: _items.length + (_loading || _error != null ? 1 : 0),
         separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
-          final r = _items[index];
+          if (_loading && index == 0) {
+            return const LinearProgressIndicator();
+          }
+          if (_error != null && index == 0) {
+            return Text(_error!, style: const TextStyle(color: Colors.red));
+          }
+          final adjustedIndex = _loading || _error != null ? index - 1 : index;
+          final r = _items[adjustedIndex];
           // Déterminer l'état visuel (pastille) et l'action principale selon le statut
           late final String statusLabel;
           late final Color statusBg;
@@ -109,18 +233,31 @@ class _ProServiceRequestsPageState extends State<ProServiceRequestsPage> {
             location: r.location,
             sentDate: r.sentDate,
             sizeText: r.sizeText,
+            message: r.message,
+            stepLabel: r.stepLabel,
             primaryAction: action,
             // Action: passer à Acceptée
             onAccept: action == _PrimaryAction.acceptReject
-                ? () => setState(() => _items[index] = r.copyWith(status: _RequestStatus.accepted))
+                ? () => _acceptDemande(demandeId: r.id, itemIndex: adjustedIndex)
                 : null,
             // Action: passer à Rejetée
             onReject: action == _PrimaryAction.acceptReject
-                ? () => setState(() => _items[index] = r.copyWith(status: _RequestStatus.rejected))
+                ? () => _rejectDemande(demandeId: r.id, itemIndex: adjustedIndex)
                 : null,
             // Action: ouvrir la page de création de proposition
             onPropose: action == _PrimaryAction.propose
-                ? () { context.push('/pro/proposition-create'); }
+                ? () {
+                    context.push(
+                      '/pro/proposition-create',
+                      extra: {
+                        if (r.projectId != null) 'projectId': r.projectId,
+                        'projectTitle': r.titleLine1,
+                        if (r.location.trim().isNotEmpty && r.location.trim() != '—' && r.location.trim() != '-')
+                          'projectLocation': r.location,
+                        if (r.projectBudget != null) 'projectBudget': r.projectBudget,
+                      },
+                    );
+                  }
                 : null,
           );
         },
@@ -135,6 +272,7 @@ enum _RequestStatus { pending, accepted, rejected }
 /// Modèle léger représentant une demande de service reçue.
 class _ServiceRequest {
   const _ServiceRequest({
+    required this.id,
     required this.initials,
     required this.name,
     required this.titleLine1,
@@ -142,9 +280,15 @@ class _ServiceRequest {
     required this.location,
     required this.sentDate,
     required this.sizeText,
+    required this.message,
+    this.stepLabel,
     required this.status,
+    this.projectId,
+    this.projectBudget,
   });
 
+  /// Identifiant de la demande.
+  final int id;
   /// Initiales de l'expéditeur (affichage avatar).
   final String initials;
   /// Nom complet de l'expéditeur.
@@ -159,11 +303,20 @@ class _ServiceRequest {
   final String sentDate;
   /// Détail sur la taille (optionnel).
   final String? sizeText;
+  /// Message de la demande.
+  final String message;
+  /// Libellé de l'étape (optionnel) ex: etapeModeleNom
+  final String? stepLabel;
   /// Statut courant de la demande.
   final _RequestStatus status;
+  /// Identifiant du projet lié (si disponible)
+  final int? projectId;
+  /// Budget du projet (dynamique car peut être int/double/String selon API)
+  final dynamic projectBudget;
 
   /// Crée une nouvelle demande en copiant la présente (valeurs modifiées si fournies).
   _ServiceRequest copyWith({
+    int? id,
     String? initials,
     String? name,
     String? titleLine1,
@@ -171,9 +324,14 @@ class _ServiceRequest {
     String? location,
     String? sentDate,
     String? sizeText,
+    String? message,
+    String? stepLabel,
     _RequestStatus? status,
+    int? projectId,
+    dynamic projectBudget,
   }) {
     return _ServiceRequest(
+      id: id ?? this.id,
       initials: initials ?? this.initials,
       name: name ?? this.name,
       titleLine1: titleLine1 ?? this.titleLine1,
@@ -181,7 +339,11 @@ class _ServiceRequest {
       location: location ?? this.location,
       sentDate: sentDate ?? this.sentDate,
       sizeText: sizeText ?? this.sizeText,
+      message: message ?? this.message,
+      stepLabel: stepLabel ?? this.stepLabel,
       status: status ?? this.status,
+      projectId: projectId ?? this.projectId,
+      projectBudget: projectBudget ?? this.projectBudget,
     );
   }
 }
@@ -203,6 +365,8 @@ class _RequestCard extends StatelessWidget {
     required this.sentDate,
     required this.sizeText,
     required this.primaryAction,
+    required this.message,
+    this.stepLabel,
     this.onAccept,
     this.onReject,
     this.onPropose,
@@ -230,6 +394,10 @@ class _RequestCard extends StatelessWidget {
   final String? sizeText;
   /// Action principale disponible.
   final _PrimaryAction primaryAction;
+  /// Message de la demande.
+  final String message;
+  /// Libellé de l'étape (optionnel)
+  final String? stepLabel;
   /// Action: passer à Acceptée.
   final VoidCallback? onAccept;
   /// Action: passer à Rejetée.
@@ -283,18 +451,23 @@ class _RequestCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // Bloc d'informations secondaires (lieu + date)
+            Text(message, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF111827))),
+            if (stepLabel != null && stepLabel!.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.flag_outlined, size: 16, color: Color(0xFF64748B)),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(stepLabel!, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF374151))))
+                ],
+              ),
+            ],
+            const SizedBox(height: 8),
+            // Bloc d'informations secondaires (date)
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.place_outlined, size: 16, color: Color(0xFF64748B)),
-                    const SizedBox(width: 6),
-                    Text(location, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
-                  ],
-                ),
-                const SizedBox(height: 6),
+                // Localité masquée sur demande
                 Row(
                   children: [
                     const Icon(Icons.schedule, size: 16, color: Color(0xFF64748B)),
