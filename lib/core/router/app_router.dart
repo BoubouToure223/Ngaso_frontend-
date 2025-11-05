@@ -39,6 +39,7 @@ import 'package:myapp/features/novice/screens/step5_detail_page.dart';
 import 'package:myapp/features/novice/screens/step6_detail_page.dart';
 import 'package:myapp/features/novice/screens/experts_page.dart';
 import 'package:myapp/features/novice/screens/expert_detail_page.dart';
+import 'package:myapp/features/novice/screens/service_requests_page.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 // Fonction utilitaire pour le SVG (avec placeholder discret)
@@ -301,6 +302,12 @@ final GoRouter router = GoRouter(
           path: '/Novice/my-projects',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceMyProjectsPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/service-requests',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceServiceRequestsPage();
           },
         ),
         GoRoute(

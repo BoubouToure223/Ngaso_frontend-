@@ -208,6 +208,14 @@ class NoviceHomePage extends StatelessWidget {
                         context.push('/Novice/project-create');
                       },
                     ),
+                    const SizedBox(height: 12),
+                    _QuickCard(
+                      icon: Icons.assignment,
+                      title: 'Mes demandes services',
+                      onTap: () {
+                        context.push('/Novice/service-requests');
+                      },
+                    ),
                     const SizedBox(height: 20),
                     Text(
                       'Comment ça marche',

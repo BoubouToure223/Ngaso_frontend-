@@ -97,9 +97,7 @@ class _DemandCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                         ),
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Voir profil: ${data.proName}')),
-                          );
+                          context.push('/Novice/experts/detail');
                         },
                         child: const Text('Voir profil'),
                       ),
