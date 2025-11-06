@@ -19,12 +19,10 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
   final TextEditingController _phoneCtrl = TextEditingController();
   final TextEditingController _addressCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
-  final TextEditingController _confirmPasswordCtrl = TextEditingController();
   bool _loading = false;
 
   // Indicateurs pour masquer/afficher les mots de passe.
   bool _obscurePassword = true;
-  bool _obscureConfirm = true;
 
   @override
   void dispose() {
@@ -35,7 +33,6 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
     _phoneCtrl.dispose();
     _addressCtrl.dispose();
     _passwordCtrl.dispose();
-    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
@@ -174,24 +171,11 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
                         TextField(
                           controller: _passwordCtrl,
                           obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.next,
+                          textInputAction: TextInputAction.done,
                           decoration: _filledDecoration('Entrez un mot de passe').copyWith(
                             suffixIcon: IconButton(
                               icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
                               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Champ Confirmation du mot de passe.
-                        TextField(
-                          controller: _confirmPasswordCtrl,
-                          obscureText: _obscureConfirm,
-                          textInputAction: TextInputAction.done,
-                          decoration: _filledDecoration('Confirmez votre mot de passe').copyWith(
-                            suffixIcon: IconButton(
-                              icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
-                              onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                             ),
                           ),
                         ),
@@ -206,7 +190,6 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
                                 : () async {
                                     final email = _emailCtrl.text.trim();
                                     final pwd = _passwordCtrl.text;
-                                    final confirm = _confirmPasswordCtrl.text;
                                     if (email.isEmpty || !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(content: Text('Entrez un email valide')),
@@ -219,34 +202,23 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
                                       );
                                       return;
                                     }
-                                    if (pwd != confirm) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Les mots de passe ne correspondent pas')),
-                                      );
-                                      return;
-                                    }
                                     setState(() => _loading = true);
                                     try {
                                       final repo = AuthRepository();
                                       final body = {
-                                        'lastName': _lastNameCtrl.text.trim(),
-                                        'firstName': _firstNameCtrl.text.trim(),
+                                        'nom': _lastNameCtrl.text.trim(),
+                                        'prenom': _firstNameCtrl.text.trim(),
+                                        'telephone': _phoneCtrl.text.trim(),
+                                        'adresse': _addressCtrl.text.trim(),
                                         'email': email,
-                                        'phone': _phoneCtrl.text.trim(),
-                                        'address': _addressCtrl.text.trim(),
                                         'password': pwd,
                                       };
                                       final res = await repo.registerNovice(body);
                                       if (!mounted) return;
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Compte créé, connexion automatique...')),
+                                        const SnackBar(content: Text('Compte créé, veuillez vous connecter.')),
                                       );
-                                      final role = (res.role ?? '').toLowerCase();
-                                      if (role == 'novice') {
-                                        context.go('/Novice/home');
-                                      } else {
-                                        context.go('/Novice/home');
-                                      }
+                                      context.go('/connexion');
                                     } catch (e) {
                                       if (!mounted) return;
                                       ScaffoldMessenger.of(context).showSnackBar(

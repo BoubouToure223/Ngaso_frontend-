@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/repositories/user_repository.dart';
+import 'package:myapp/core/data/models/user_me_response.dart';
 
 class NoviceProfilePage extends StatelessWidget {
   const NoviceProfilePage({super.key});
@@ -7,6 +9,7 @@ class NoviceProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final futureMe = UserRepository().getMe();
     return Container(
       color: const Color(0xFFFCFAF7),
       child: SafeArea(
@@ -16,17 +19,31 @@ class NoviceProfilePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Avatar + Modifier
-              CircleAvatar(
-                radius: 48,
-                backgroundColor: const Color(0xFFD9D9D9),
-                child: Text(
-                  'MT',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: const Color.fromARGB(255, 255, 255, 255),
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              FutureBuilder<UserMeResponse>(
+                future: futureMe,
+                builder: (context, snapshot) {
+                  String initials = 'U';
+                  if (snapshot.hasData) {
+                    final p = (snapshot.data?.prenom ?? '').trim();
+                    final n = (snapshot.data?.nom ?? '').trim();
+                    final i1 = p.isNotEmpty ? p[0] : '';
+                    final i2 = n.isNotEmpty ? n[0] : '';
+                    final combined = (i1 + i2).toUpperCase();
+                    initials = combined.isNotEmpty ? combined : 'U';
+                  }
+                  return CircleAvatar(
+                    radius: 48,
+                    backgroundColor: const Color(0xFFD9D9D9),
+                    child: Text(
+                      initials,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: const Color.fromARGB(255, 255, 255, 255),
+                        fontSize: 30,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 10),
               Container(
@@ -49,42 +66,64 @@ class NoviceProfilePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(
-                'Mariam Traoré',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFF1C120D),
-                  fontWeight: FontWeight.w700,
-                ),
+              FutureBuilder<UserMeResponse>(
+                future: futureMe,
+                builder: (context, snapshot) {
+                  final nom = snapshot.data?.nom?.trim() ?? '';
+                  final prenom = snapshot.data?.prenom?.trim() ?? '';
+                  final fullname = (prenom.isNotEmpty || nom.isNotEmpty) ? '$prenom $nom'.trim() : 'Utilisateur';
+                  return Text(
+                    fullname,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: const Color(0xFF1C120D),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 50),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFF2EAE8)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Informations personnelles',
-                      style: TextStyle(
-                        color: Color(0xFF1C120D),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
+              FutureBuilder<UserMeResponse>(
+                future: futureMe,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  }
+                  if (!snapshot.hasData) {
+                    return const CircularProgressIndicator();
+                  }
+                  final email = snapshot.data?.email ?? '—';
+                  final tel = snapshot.data?.telephone ?? '—';
+                  final addr = snapshot.data?.adresse ?? '—';
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFF2EAE8)),
                     ),
-                    SizedBox(height: 12),
-                    _InfoRow(icon: Icons.mail_outline, title: 'Email', value: 'moussa.traore@ngaso.com'),
-                    SizedBox(height: 14),
-                    _InfoRow(icon: Icons.phone_outlined, title: 'Téléphone', value: '+223 76 45 67 89'),
-                    SizedBox(height: 14),
-                    _InfoRow(icon: Icons.location_on_outlined, title: 'Localisation', value: 'Bamako, Mali'),
-                  ],
-                ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Informations personnelles',
+                          style: TextStyle(
+                            color: Color(0xFF1C120D),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _InfoRow(icon: Icons.mail_outline, title: 'Email', value: email),
+                        const SizedBox(height: 14),
+                        _InfoRow(icon: Icons.phone_outlined, title: 'Téléphone', value: tel),
+                        const SizedBox(height: 14),
+                        _InfoRow(icon: Icons.location_on_outlined, title: 'Localisation', value: addr),
+                      ],
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 180),

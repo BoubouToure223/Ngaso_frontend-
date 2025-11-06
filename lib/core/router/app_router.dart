@@ -59,7 +59,7 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/',
       redirect: (BuildContext context, GoRouterState state) {
-        return '/splash';
+        return '/connexion';
       }
     ),
     // La route pour la page splash.

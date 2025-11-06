@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/repositories/dashboard_repository.dart';
+import 'package:myapp/core/data/models/dashboard_novice_response.dart';
 
 class NoviceHomePage extends StatelessWidget {
   const NoviceHomePage({super.key});
@@ -7,6 +9,7 @@ class NoviceHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final futureDash = DashboardRepository().getNoviceDashboard();
     return Container(
       color: const Color(0xFFFCFAF7),
       child: SafeArea(
@@ -30,20 +33,76 @@ class NoviceHomePage extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      'Bienvenue Mariam',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: const Color(0xFF1C120D),
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: FutureBuilder<DashboardNoviceResponse>(
+                      future: futureDash,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Text(
+                            'Bienvenue',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: const Color(0xFF1C120D),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          );
+                        }
+                        if (snapshot.hasError) {
+                          return Text(
+                            'Bienvenue',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: const Color(0xFF1C120D),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          );
+                        }
+                        final prenom = snapshot.data?.prenom?.trim();
+                        final text = (prenom != null && prenom.isNotEmpty)
+                            ? 'Bienvenue $prenom'
+                            : 'Bienvenue';
+                        return Text(
+                          text,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: const Color(0xFF1C120D),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      },
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => context.push('/Novice/notifications'),
-                    icon: const Icon(
-                      Icons.notifications_none_rounded,
-                      color: Color(0xFF1C120D),
-                    ),
+                  FutureBuilder<DashboardNoviceResponse>(
+                    future: futureDash,
+                    builder: (context, snapshot) {
+                      final unread = (snapshot.hasData)
+                          ? (snapshot.data?.unreadNotifications ?? 0)
+                          : 0;
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          IconButton(
+                            onPressed: () => context.push('/Novice/notifications'),
+                            icon: const Icon(
+                              Icons.notifications_none_rounded,
+                              color: Color(0xFF1C120D),
+                            ),
+                          ),
+                          if (unread > 0)
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE53935),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  unread > 99 ? '99+' : '$unread',
+                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -63,110 +122,229 @@ class NoviceHomePage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Color(0xFFFCFAF7),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: SizedBox(
-                                  width: 56,
-                                  height: 56,
-                                  child: Image.asset(
-                                    'assets/images/mon_projet.png',
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (c, e, s) => Container(
-                                      color: const Color(0xFFEDE7E3),
-                                      child: const Icon(
-                                        Icons.image_outlined,
-                                        color: Color(0xFF6B4F4A),
-                                      ),
-                                    ),
+                    FutureBuilder<DashboardNoviceResponse>(
+                      future: futureDash,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Color(0xFFFCFAF7),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: const [
+                                SizedBox(width: 56, height: 56, child: ColoredBox(color: Color(0xFFEDE7E3))),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(height: 18, child: ColoredBox(color: Color(0xFFEDE7E3))),
+                                      SizedBox(height: 8),
+                                      SizedBox(height: 12, child: ColoredBox(color: Color(0xFFEDE7E3))),
+                                    ],
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
+                              ],
+                            ),
+                          );
+                        }
+                        if (snapshot.hasError) {
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Color(0xFFFCFAF7),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: const [
+                                    Icon(Icons.error_outline, color: Color(0xFFE53935)),
+                                    SizedBox(width: 8),
+                                    Text('Erreur de chargement du tableau de bord'),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                const Text('Veuillez réessayer plus tard.'),
+                              ],
+                            ),
+                          );
+                        }
+                        final last = snapshot.data?.lastProject;
+                        final titre = (last?.titre?.isNotEmpty ?? false) ? last!.titre! : 'Projet de construction';
+                        final current = last?.currentEtape ?? '—';
+                        final next = last?.prochaineEtape ?? '—';
+                        final progress = ((last?.progressPercent ?? 0).clamp(0, 100)) / 100.0;
+                        if (last == null) {
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Color(0xFFFCFAF7),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      'Projet de construction',
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
-                                            color: const Color(0xFF1C120D),
-                                            fontWeight: FontWeight.w600,
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: SizedBox(
+                                        width: 56,
+                                        height: 56,
+                                        child: Image.asset(
+                                          'assets/images/mon_projet.png',
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (c, e, s) => Container(
+                                            color: const Color(0xFFEDE7E3),
+                                            child: const Icon(
+                                              Icons.image_outlined,
+                                              color: Color(0xFF6B4F4A),
+                                            ),
                                           ),
+                                        ),
+                                      ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Étape actuelle: Fondation',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: const Color(0xFF6B4F4A),
-                                            fontWeight: FontWeight.w500,
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Aucun projet pour le moment',
+                                            style: theme.textTheme.titleMedium?.copyWith(
+                                              color: const Color(0xFF1C120D),
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Vous n\'avez pas encore de projet de construction. Créez un projet et suivez son avancement ici.',
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: const Color(0xFF6B4F4A),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Prochaine étape: Élévation des murs',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF6B4F4A),
+                                const SizedBox(height: 12),
+                              ],
                             ),
+                          );
+                        }
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Color(0xFFFCFAF7),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          const SizedBox(height: 8),
-                          Column(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                               ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: LinearProgressIndicator(
-                                    value: 0.35,
-                                    minHeight: 8,
-                                    backgroundColor: const Color(0xFFE9DFDC),
-                                    valueColor: const AlwaysStoppedAnimation(
-                                      Color(0xFF5A67D8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: SizedBox(
+                                      width: 56,
+                                      height: 56,
+                                      child: Image.asset(
+                                        'assets/images/mon_projet.png',
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (c, e, s) => Container(
+                                          color: const Color(0xFFEDE7E3),
+                                          child: const Icon(
+                                            Icons.image_outlined,
+                                            color: Color(0xFF6B4F4A),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 15),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child:ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF3F51B5),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          titre,
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                                color: const Color(0xFF1C120D),
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Étape actuelle: $current',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: const Color(0xFF6B4F4A),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                onPressed: () {
-                                  context.push('/Novice/steps');
-                                },
-                                child: const Text('Voir les étapes'),
+                                ],
                               ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Prochaine étape: $next',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: const Color(0xFF6B4F4A),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: LinearProgressIndicator(
+                                      value: progress,
+                                      minHeight: 8,
+                                      backgroundColor: const Color(0xFFE9DFDC),
+                                      valueColor: const AlwaysStoppedAnimation(
+                                        Color(0xFF5A67D8),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 15),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF3F51B5),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 10,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        context.push('/Novice/steps');
+                                      },
+                                      child: const Text('Voir les étapes'),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
                     Text(

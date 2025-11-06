@@ -31,11 +31,12 @@ class AuthRepository {
       final token = data['token'] as String?;
       final role = data['role'] as String?;
       final userId = data['userId'];
-      if (token == null || token.isEmpty) {
-        throw Exception('Token manquant');
+      if (token != null && token.isNotEmpty) {
+        await TokenStorage.instance.saveToken(token);
+        return AuthResult(token: token, role: role, userId: userId);
       }
-      await TokenStorage.instance.saveToken(token);
-      return AuthResult(token: token, role: role, userId: userId);
+      // Pas de token: considérer l'inscription comme réussie sans connexion automatique
+      return AuthResult(token: '', role: role, userId: userId);
     } on DioException catch (e) {
       final msg = e.response?.data is Map && (e.response?.data['message'] != null)
           ? e.response?.data['message'].toString()
