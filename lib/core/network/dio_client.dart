@@ -36,10 +36,16 @@ class DioClient {
 
     _dio.interceptors.add(PrettyDioLogger(
       requestHeader: true,
-      requestBody: true,
-      responseBody: true,
+      requestBody: false,
+      responseBody: false,
       responseHeader: false,
       compact: true,
+      logPrint: (obj) {
+        final s = obj.toString();
+        if (s.length > 1000) return; // skip very long lines (e.g., binary)
+        // ignore: avoid_print
+        print(s);
+      },
     ));
   }
 
