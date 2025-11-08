@@ -23,9 +23,61 @@ class _ProRealizationsPageState extends State<ProRealizationsPage> {
     if (u == null || u.isEmpty) return null;
     if (u.startsWith('http://') || u.startsWith('https://')) return u;
     final base = Uri.parse(ApiConfig.baseUrl);
-    final origin = '${base.scheme}://${base.host}${base.hasPort ? ':${base.port}' : ''}';
-    if (u.startsWith('/')) return '$origin$u';
-    return '$origin/$u';
+    final basePath = base.path; // e.g. /api/v1
+    var path = u;
+    if (path.startsWith('/')) path = path.substring(1);
+    final normalizedBase = basePath.startsWith('/') ? basePath.substring(1) : basePath;
+    if (normalizedBase.isNotEmpty && path.startsWith(normalizedBase)) {
+      path = path.substring(normalizedBase.length);
+      if (path.startsWith('/')) path = path.substring(1);
+    }
+    return path; // relative like 'uploads/...'
+  }
+
+  String? _extractId(Map it) {
+    for (final k in ['id', 'realisationId', 'uuid', 'key', 'identifier']) {
+      final v = it[k];
+      if (v == null) continue;
+      return v.toString();
+    }
+    // Try to parse from image/url fields (last path segment without extension)
+    final u = (it['imageUrl'] ?? it['url'] ?? it['image'])?.toString();
+    if (u is String && u.isNotEmpty) {
+      try {
+        final uri = Uri.parse(u);
+        final seg = (uri.pathSegments.isNotEmpty ? uri.pathSegments.last : u).split('?').first;
+        final dot = seg.lastIndexOf('.');
+        final base = dot > 0 ? seg.substring(0, dot) : seg;
+        if (base.isNotEmpty) return base;
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  Future<void> _confirmDelete(BuildContext context, String realisationId) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Supprimer cette réalisation ?'),
+        content: const Text('Cette action est irréversible.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Annuler')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Supprimer')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ProApiService().deleteMyRealisationById(realisationId);
+      if (!mounted) return;
+      setState(() {
+        _future = ProApiService().getMyRealisationsItems();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Réalisation supprimée')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Suppression échouée: $e')));
+    }
   }
 
   @override
@@ -88,20 +140,41 @@ class _ProRealizationsPageState extends State<ProRealizationsPage> {
               final it = items[index];
               String? imageUrl;
               String? title;
+              String? realId;
               if (it is String) {
                 imageUrl = it;
               } else if (it is Map) {
                 imageUrl = (it['imageUrl'] ?? it['url'] ?? it['image'])?.toString();
                 title = (it['titre'] ?? it['title'])?.toString();
+                realId = _extractId(it);
               }
               final resolved = _absUrl(imageUrl);
               return ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  color: Colors.white,
-                  child: resolved != null && resolved.isNotEmpty
-                      ? AuthImage(url: resolved, fit: BoxFit.cover)
-                      : _ImageFallback(title: title),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(
+                      color: Colors.white,
+                      child: resolved != null && resolved.isNotEmpty
+                          ? AuthImage(url: resolved, fit: BoxFit.cover)
+                          : _ImageFallback(title: title),
+                    ),
+                    if (realId != null && realId.isNotEmpty)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Material(
+                          color: Colors.black45,
+                          shape: const CircleBorder(),
+                          child: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.white, size: 18),
+                            tooltip: 'Supprimer',
+                            onPressed: () => _confirmDelete(context, realId!),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               );
             },
@@ -186,8 +259,8 @@ class _AddRealizationSheetState extends State<_AddRealizationSheet> {
 
   /// Vérifie les champs obligatoires et soumet en uploadant la première image.
   Future<void> _submit() async {
-    if (_titleCtrl.text.trim().isEmpty || _locationCtrl.text.trim().isEmpty || _descCtrl.text.trim().isEmpty || _files.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez remplir tous les champs obligatoires')));
+    if (_files.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez sélectionner une image')));
       return;
     }
     final first = _files.first;
@@ -237,30 +310,7 @@ class _AddRealizationSheetState extends State<_AddRealizationSheet> {
                   IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.close)),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text('Nom du projet*', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF374151), fontWeight: FontWeight.w500)),
-              const SizedBox(height: 4),
-              TextField(
-                controller: _titleCtrl,
-                decoration: _inputDecoration('Ex: Construction villa 3 chambres'),
-              ),
-              const SizedBox(height: 12),
-              Text('Localisation*', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF374151), fontWeight: FontWeight.w500)),
-              const SizedBox(height: 4),
-              TextField(
-                controller: _locationCtrl,
-                decoration: _inputDecoration('Ex: Bamako, Sotuba'),
-              ),
-              const SizedBox(height: 12),
-              Text('Description*', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF374151), fontWeight: FontWeight.w500)),
-              const SizedBox(height: 4),
-              TextField(
-                controller: _descCtrl,
-                minLines: 4,
-                maxLines: 8,
-                decoration: _inputDecoration('Décrivez votre projet...'),
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Text('Photos*', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF374151), fontWeight: FontWeight.w500)),
               const SizedBox(height: 8),
               SizedBox(
@@ -284,17 +334,6 @@ class _AddRealizationSheetState extends State<_AddRealizationSheet> {
                       .toList(),
                 ),
               ],
-              const SizedBox(height: 12),
-              Text('Date de début des travaux', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF374151), fontWeight: FontWeight.w500)),
-              const SizedBox(height: 4),
-              SizedBox(
-                height: 48,
-                child: OutlinedButton.icon(
-                  onPressed: _pickDate,
-                  icon: const Icon(Icons.event),
-                  label: Text(_startDate == null ? 'mm/dd/yyyy' : '${_startDate!.month}/${_startDate!.day}/${_startDate!.year}'),
-                ),
-              ),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,

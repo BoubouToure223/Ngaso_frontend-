@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http_parser/http_parser.dart';
 import '../../network/dio_client.dart';
 import '../models/pro_dashboard.dart';
+import '../models/app_notification.dart';
 
 class ProApiService {
   final Dio _dio = DioClient.I.dio;
@@ -30,6 +31,14 @@ class ProApiService {
 
   Future<List<dynamic>> getMyRealisationsItems() async {
     final res = await _dio.get('/professionnels/me/realisations/items');
+    final data = res.data;
+    if (data is List) return data;
+    if (data is Map && data['content'] is List) return List.from(data['content']);
+    return const [];
+  }
+
+  Future<List<dynamic>> deleteMyRealisationById(String realisationId) async {
+    final res = await _dio.delete('/professionnels/me/realisations/$realisationId');
     final data = res.data;
     if (data is List) return data;
     if (data is Map && data['content'] is List) return List.from(data['content']);
@@ -152,6 +161,50 @@ class ProApiService {
     if (data is List) return data;
     if (data is Map && data['content'] is List) return List.from(data['content']);
     return const [];
+  }
+
+  Future<List<AppNotification>> getMyNotifications() async {
+    final res = await _dio.get('/notifications/me');
+    final data = res.data;
+    if (data is List) {
+      return data
+          .map((e) => AppNotification.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(growable: false);
+    }
+    if (data is Map && data['content'] is List) {
+      return List.from(data['content'])
+          .map((e) => AppNotification.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(growable: false);
+    }
+    return const [];
+  }
+
+  Future<int> getMyNotificationsCount() async {
+    final res = await _dio.get('/notifications/me/count');
+    final data = res.data;
+    int? parseDynamic(dynamic v) {
+      if (v is int) return v;
+      if (v is String) return int.tryParse(v);
+      if (v is Map) {
+        for (final k in ['count', 'unread', 'unreadCount', 'nonLu', 'nonLus', 'nonLues', 'value']) {
+          if (v.containsKey(k)) {
+            final r = parseDynamic(v[k]);
+            if (r != null) return r;
+          }
+        }
+        if (v.containsKey('data')) {
+          final r = parseDynamic(v['data']);
+          if (r != null) return r;
+        }
+      }
+      if (v is List) return v.length;
+      return null;
+    }
+    return parseDynamic(data) ?? 0;
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    await _dio.post('/notifications/me/read');
   }
 
   Future<List<dynamic>> getConversationMessages({

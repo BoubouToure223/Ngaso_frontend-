@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/services/pro_api_service.dart';
+import 'package:myapp/core/data/models/app_notification.dart';
 
 /// Page des notifications (Espace Pro).
 ///
@@ -64,72 +66,17 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
   _NotifCategory? _filter; // null => Tous
 
   late List<_NotifItem> _items;
+  final _api = ProApiService();
+  bool _loading = true;
+  String? _error;
+  int _unreadCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _items = const [
-      _NotifItem(
-        category: _NotifCategory.demandes,
-        borderColor: Color(0xFFD1D5DB),
-        title1: 'Moussa Traoré a envoyé une',
-        title2: 'demande de service pour Fondation',
-        title3: '– Maison R+1.',
-        timeText: 'Il y a 10 min',
-        actionText: 'Voir la demande',
-        actionColor: Color(0xFF374151),
-        faded: false,
-      ),
-      _NotifItem(
-        category: _NotifCategory.propositions,
-        borderColor: Color(0xFF86EFAC),
-        title1: 'Votre proposition pour le projet',
-        title2: 'Maison Bamako a été acceptée.',
-        timeText: 'Il y a 2 heures',
-        actionText: 'Ouvrir la discussion',
-        actionColor: Color(0xFF16A34A),
-        faded: false,
-      ),
-      _NotifItem(
-        category: _NotifCategory.messages,
-        borderColor: Color(0xFF93C5FD),
-        title1: 'Nouveau message de Awa Diarra.',
-        timeText: 'Il y a 5 min',
-        actionText: 'Ouvrir le message',
-        actionColor: Color(0xFF1D4ED8),
-        faded: false,
-      ),
-      _NotifItem(
-        category: _NotifCategory.propositions,
-        borderColor: Color(0xFFFCA5A5),
-        title1: 'Votre proposition pour le projet',
-        title2: 'Villa Kalabancoro a été rejetée.',
-        timeText: 'Hier à 18h',
-        actionText: 'Voir les détails',
-        actionColor: Color(0xFFDC2626),
-        faded: false,
-      ),
-      // Anciennes notifications (faded true)
-      _NotifItem(
-        category: _NotifCategory.propositions,
-        borderColor: Color(0xFF86EFAC),
-        title1: 'Votre proposition pour le projet',
-        title2: 'Extension Sikasso a été acceptée.',
-        timeText: 'Il y a 3 jours',
-        actionText: 'Ouvrir la discussion',
-        actionColor: Color(0xFF16A34A),
-        faded: true,
-      ),
-      _NotifItem(
-        category: _NotifCategory.messages,
-        borderColor: Color(0xFF93C5FD),
-        title1: 'Nouveau message de Mamadou Keita.',
-        timeText: 'Il y a 4 jours',
-        actionText: 'Ouvrir le message',
-        actionColor: Color(0xFF1D4ED8),
-        faded: true,
-      ),
-    ];
+    _items = const [];
+    _fetchNotifications();
+    _fetchUnreadCount();
   }
 
   @override
@@ -158,7 +105,7 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
               height: 20,
               decoration: const BoxDecoration(color: Color(0xFF2563EB), shape: BoxShape.circle),
               alignment: Alignment.center,
-              child: Text('${unread.length}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 10)),
+              child: Text('$_unreadCount', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 10)),
             ),
           ],
         ),
@@ -211,7 +158,22 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
           ),
         ),
       ),
-      body: ListView(
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_error!, style: const TextStyle(color: Colors.red)),
+                      const SizedBox(height: 8),
+                      ElevatedButton(onPressed: _fetchNotifications, child: const Text('Réessayer')),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+        onRefresh: _onRefresh,
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Row(
@@ -219,11 +181,7 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
             children: [
               Text('Nouvelles', style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF374151), fontWeight: FontWeight.w600)),
               TextButton(
-                onPressed: unread.isEmpty
-                    ? null
-                    : () => setState(() {
-                          _items = _items.map((e) => e.markRead()).toList(growable: false);
-                        }),
+                onPressed: _unreadCount == 0 || _loading ? null : _markAllRead,
                 child: const Text('Tout marquer comme lu'),
               ),
             ],
@@ -266,6 +224,7 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
               )),
         ],
       ),
+      ),
     );
   }
 
@@ -293,6 +252,113 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
         // Open messages discussion
         context.push('/pro/chat', extra: {'name': 'Contact', 'initials': 'CN'});
         break;
+    }
+  }
+
+  Future<void> _fetchNotifications() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final List<AppNotification> data = await _api.getMyNotifications();
+      final items = data.map(_mapToItem).toList(growable: false);
+      setState(() {
+        _items = items;
+        _unreadCount = items.where((e) => !e.faded).length;
+        _loading = false;
+      });
+      // Met à jour le compteur après chargement de la liste
+      _fetchUnreadCount();
+    } catch (e) {
+      setState(() {
+        _error = 'Impossible de charger les notifications';
+        _loading = false;
+      });
+    }
+  }
+
+  _NotifItem _mapToItem(AppNotification n) {
+    final t = n.type.toLowerCase();
+    if (t.contains('demandeservice')) {
+      return _NotifItem(
+        category: _NotifCategory.demandes,
+        borderColor: n.estVu ? const Color(0xFFD1D5DB) : const Color(0xFFF59E0B),
+        title1: n.contenu,
+        timeText: _relativeTime(n.date),
+        actionText: 'Voir la demande',
+        actionColor: const Color(0xFF374151),
+        faded: n.estVu,
+      );
+    }
+    if (t.contains('propositiondevis')) {
+      final isAccepted = n.contenu.toLowerCase().contains('accept');
+      final isRefused = n.contenu.toLowerCase().contains('refus');
+      return _NotifItem(
+        category: _NotifCategory.propositions,
+        borderColor: isAccepted ? const Color(0xFF86EFAC) : (isRefused ? const Color(0xFFFCA5A5) : const Color(0xFFD1D5DB)),
+        title1: n.contenu,
+        timeText: _relativeTime(n.date),
+        actionText: isAccepted ? 'Ouvrir la discussion' : 'Voir les détails',
+        actionColor: isAccepted ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+        faded: n.estVu,
+      );
+    }
+    return _NotifItem(
+      category: _NotifCategory.messages,
+      borderColor: const Color(0xFF93C5FD),
+      title1: n.contenu,
+      timeText: _relativeTime(n.date),
+      actionText: 'Ouvrir le message',
+      actionColor: const Color(0xFF1D4ED8),
+      faded: n.estVu,
+    );
+  }
+
+  String _relativeTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final diff = now.difference(dateTime);
+    if (diff.inMinutes < 1) return 'À l\'instant';
+    if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'Il y a ${diff.inHours} h';
+    return 'Il y a ${diff.inDays} j';
+  }
+
+  Future<void> _fetchUnreadCount() async {
+    try {
+      final c = await _api.getMyNotificationsCount();
+      if (mounted) {
+        final local = _items.where((e) => !e.faded).length;
+        setState(() => _unreadCount = c > local ? c : local);
+      }
+    } catch (_) {
+      // ignore: avoid_print
+      // print('Failed to fetch notifications count');
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    await _fetchNotifications();
+    await _fetchUnreadCount();
+  }
+
+  Future<void> _markAllRead() async {
+    setState(() {
+      _loading = true;
+    });
+    try {
+      await _api.markAllNotificationsRead();
+      // Optimistic UI update
+      setState(() {
+        _items = _items.map((e) => e.markRead()).toList(growable: false);
+        _unreadCount = 0;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = 'Échec du marquage comme lu';
+      });
     }
   }
 }
