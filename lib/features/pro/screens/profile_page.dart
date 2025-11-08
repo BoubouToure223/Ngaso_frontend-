@@ -1,13 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/models/user_me_response.dart';
+import 'package:myapp/core/data/services/pro_api_service.dart';
 
 /// Page Pro: profil utilisateur (affichage et actions rapides).
 ///
 /// - Affiche les informations personnelles.
 /// - Accès à la modification du profil via une bottom sheet.
 /// - Accès au changement de mot de passe et à la déconnexion.
-class ProProfilePage extends StatelessWidget {
+class ProProfilePage extends StatefulWidget {
   const ProProfilePage({super.key});
+
+  @override
+  State<ProProfilePage> createState() => _ProProfilePageState();
+}
+
+class _ProProfilePageState extends State<ProProfilePage> {
+  late Future<UserMeResponse> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ProApiService().getUserMe();
+  }
+
+  String _initials(UserMeResponse me) {
+    final p = (me.prenom ?? '').trim();
+    final n = (me.nom ?? '').trim();
+    String i = '';
+    if (p.isNotEmpty) i += p[0].toUpperCase();
+    if (n.isNotEmpty) i += n[0].toUpperCase();
+    return i.isNotEmpty ? i : 'BT';
+  }
+
+  String _fullName(UserMeResponse me) {
+    final p = (me.prenom ?? '').trim();
+    final n = (me.nom ?? '').trim();
+    final name = [p, n].where((e) => e.isNotEmpty).join(' ');
+    return name.isNotEmpty ? name : 'Profil';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,30 +57,40 @@ class ProProfilePage extends StatelessWidget {
         title: Text('Profil', style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF1F2937), fontWeight: FontWeight.w600)),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Avatar avec initiales
-              // Avatar initials
-              Stack(
-                clipBehavior: Clip.none,
+        child: FutureBuilder<UserMeResponse>(
+          future: _future,
+          builder: (context, snap) {
+            final me = snap.data;
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 96,
-                    height: 96,
-                    decoration: const BoxDecoration(color: Color(0xFFE5E7EB), shape: BoxShape.circle),
-                    alignment: Alignment.center,
-                    child: const Text('BT', style: TextStyle(color: Color(0xFF1E3A8A), fontSize: 26, fontWeight: FontWeight.w700)),
+                  // Avatar avec initiales
+                  // Avatar initials
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 96,
+                        height: 96,
+                        decoration: const BoxDecoration(color: Color(0xFFE5E7EB), shape: BoxShape.circle),
+                        alignment: Alignment.center,
+                        child: Text(
+                          me != null ? _initials(me) : '—',
+                          style: const TextStyle(color: Color(0xFF1E3A8A), fontSize: 26, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text('Moussa Traoré', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF1F2937))),
-              const SizedBox(height: 4),
-              Text('Professionnel - Entrepreneur', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF6B7280))),
-              const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+                  Text(
+                    me != null ? _fullName(me) : '—',
+                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF1F2937)),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('Professionnel - Entrepreneur', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF6B7280))),
+                  const SizedBox(height: 12),
               // Bouton: modifier le profil (ouvre une bottom sheet)
               // Edit profile
               SizedBox(
@@ -82,44 +123,27 @@ class ProProfilePage extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: Text('Informations personnelles', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500, color: const Color(0xFF1F2937))),
                     ),
-                    const _InfoRow(
-                      iconBg: Color(0xFFEFF6FF),
+                    _InfoRow(
+                      iconBg: const Color(0xFFEFF6FF),
                       icon: Icons.mail_outline,
                       label: 'Email',
-                      value: 'moussa.traore@ngaso.com',
+                      value: (me?.email ?? '').isNotEmpty ? me!.email! : '—',
                     ),
                     const Divider(height: 1, color: Color(0xFFE5E7EB)),
-                    const _InfoRow(
-                      iconBg: Color(0xFFEFF6FF),
+                    _InfoRow(
+                      iconBg: const Color(0xFFEFF6FF),
                       icon: Icons.phone_outlined,
                       label: 'Téléphone',
-                      value: '+223 76 45 67 89',
+                      value: (me?.telephone ?? '').isNotEmpty ? me!.telephone! : '—',
                     ),
                     const Divider(height: 1, color: Color(0xFFE5E7EB)),
-                    const _InfoRow(
-                      iconBg: Color(0xFFE5E7EB),
+                    _InfoRow(
+                      iconBg: const Color(0xFFE5E7EB),
                       icon: Icons.place_outlined,
                       label: 'Localisation',
-                      value: 'Bamako, Mali',
+                      value: (me?.adresse ?? '').isNotEmpty ? me!.adresse! : '—',
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Bouton: changer de mot de passe
-              // Change password button
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: OutlinedButton.icon(
-                  onPressed: () { context.go('/pro/change-password'); },
-                  icon: const Icon(Icons.password_outlined, color: Color(0xFF374151)),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFF3F4F6)),
-                    backgroundColor: const Color(0xFFF3F4F6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  label: const Text('Changer de mot de passe', style: TextStyle(color: Color(0xFF374151), fontWeight: FontWeight.w500)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -139,8 +163,10 @@ class ProProfilePage extends StatelessWidget {
                   label: const Text('Déconnexion', style: TextStyle(color: Color(0xFF374151), fontWeight: FontWeight.w500)),
                 ),
               ),
-            ],
-          ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

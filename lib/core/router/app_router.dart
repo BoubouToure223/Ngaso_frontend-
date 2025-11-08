@@ -19,7 +19,6 @@ import 'package:myapp/features/pro/screens/proposal_details_page.dart';
 import 'package:myapp/features/pro/screens/chat_page.dart';
 import 'package:myapp/features/pro/screens/proposal_create_page.dart';
 import 'package:myapp/features/pro/screens/realizations_page.dart';
-import 'package:myapp/features/pro/screens/change_password_page.dart';
 import 'package:myapp/features/pro/screens/service_requests_page.dart';
 import 'package:myapp/features/novice/screens/home_page.dart';
 import 'package:myapp/features/novice/screens/messages_page.dart';
@@ -59,8 +58,8 @@ final GoRouter router = GoRouter(
     // La route initiale de l'application.
     GoRoute(
       path: '/',
-      redirect: (BuildContext context, GoRouterState state) {
-        return '/connexion';
+      builder: (BuildContext context, GoRouterState state) {
+        return const SplashPage();
       }
     ),
     // La route pour la page splash.
@@ -203,12 +202,6 @@ final GoRouter router = GoRouter(
           path: '/pro/realizations',
           builder: (BuildContext context, GoRouterState state) {
             return const ProRealizationsPage();
-          },
-        ),
-        GoRoute(
-          path: '/pro/change-password',
-          builder: (BuildContext context, GoRouterState state) {
-            return const ProChangePasswordPage();
           },
         ),
         GoRoute(

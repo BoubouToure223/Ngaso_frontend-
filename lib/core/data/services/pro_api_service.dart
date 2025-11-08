@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'package:http_parser/http_parser.dart';
+import 'package:myapp/core/data/models/user_me_response.dart';
 import '../../network/dio_client.dart';
 import '../models/pro_dashboard.dart';
 import '../models/app_notification.dart';
@@ -43,6 +44,14 @@ class ProApiService {
     if (data is List) return data;
     if (data is Map && data['content'] is List) return List.from(data['content']);
     return const [];
+  }
+
+  Future<UserMeResponse> getUserMe() async {
+    final res = await _dio.get('/users/me');
+    final data = res.data;
+    if (data is Map<String, dynamic>) return UserMeResponse.fromJson(data);
+    if (data is Map) return UserMeResponse.fromJson(Map<String, dynamic>.from(data));
+    return const UserMeResponse();
   }
 
   Future<List<dynamic>> uploadMyRealisationImage({
