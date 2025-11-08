@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/repositories/auth_repository.dart';
 
 /// Page Pro: modification du mot de passe.
 ///
@@ -48,13 +49,25 @@ class _ProChangePasswordPageState extends State<ProChangePasswordPage> {
       return;
     }
     setState(() => _submitting = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) {
-      setState(() => _submitting = false);
+    try {
+      final repo = AuthRepository();
+      await repo.changePassword(
+        oldPassword: current,
+        newPassword: next,
+        confirmPassword: confirm,
+      );
+      if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mot de passe modifié (mock)')),
+        const SnackBar(content: Text('Mot de passe modifié avec succès')),
       );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 

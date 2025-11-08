@@ -18,9 +18,34 @@ class AuthRepository {
       await TokenStorage.instance.saveToken(token);
       return AuthResult(token: token, role: role, userId: userId);
     } on DioException catch (e) {
-      final msg = e.response?.data is Map && (e.response?.data['message'] != null)
-          ? e.response?.data['message'].toString()
-          : e.message ?? 'Erreur réseau';
+      // 1) Erreurs réseau franches → message réseau
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        throw Exception('Erreur réseau');
+      }
+
+      // 2) Si c'est bien l'appel login, on privilégie un message UX clair
+      final isLogin = e.requestOptions.path.endsWith('/auth/login');
+      if (isLogin) {
+        final status = e.response?.statusCode;
+        if (status == null || status == 400 || status == 401 || status == 403) {
+          throw Exception('Identifiants incorrects');
+        }
+      }
+
+      // 3) Statuts d'auth incorrecte → message UX clair
+      final status = e.response?.statusCode;
+      if (status == 400 || status == 401 || status == 403) {
+        throw Exception('Identifiants incorrects');
+      }
+
+      // 4) Autres cas: on tente de lire le message backend, sinon défaut login
+      final data = e.response?.data;
+      final msg = data is Map && (data['message'] != null)
+          ? data['message'].toString()
+          : 'Identifiants incorrects';
       throw Exception(msg);
     }
   }
@@ -31,11 +56,12 @@ class AuthRepository {
       final token = data['token'] as String?;
       final role = data['role'] as String?;
       final userId = data['userId'];
-      if (token == null || token.isEmpty) {
-        throw Exception('Token manquant');
+      if (token != null && token.isNotEmpty) {
+        await TokenStorage.instance.saveToken(token);
+        return AuthResult(token: token, role: role, userId: userId);
       }
-      await TokenStorage.instance.saveToken(token);
-      return AuthResult(token: token, role: role, userId: userId);
+      // Pas de token: considérer l'inscription comme réussie sans connexion automatique
+      return AuthResult(token: '', role: role, userId: userId);
     } on DioException catch (e) {
       final msg = e.response?.data is Map && (e.response?.data['message'] != null)
           ? e.response?.data['message'].toString()
@@ -68,6 +94,26 @@ class AuthRepository {
       final msg = e.response?.data is Map && (e.response?.data['message'] != null)
           ? e.response?.data['message'].toString()
           : e.message ?? 'Erreur réseau';
+      throw Exception(msg);
+    }
+  }
+
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      await _api.changePassword(
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      final msg = data is Map && data['message'] != null
+          ? data['message'].toString()
+          : e.response?.data?.toString() ?? e.message ?? 'Erreur réseau';
       throw Exception(msg);
     }
   }

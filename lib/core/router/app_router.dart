@@ -23,13 +23,24 @@ import 'package:myapp/features/pro/screens/change_password_page.dart';
 import 'package:myapp/features/pro/screens/service_requests_page.dart';
 import 'package:myapp/features/novice/screens/home_page.dart';
 import 'package:myapp/features/novice/screens/messages_page.dart';
-import 'package:myapp/features/novice/screens/projects_page.dart';
 import 'package:myapp/features/novice/screens/profile_page.dart';
 import 'package:myapp/features/novice/screens/chat_page.dart';
 import 'package:myapp/features/novice/screens/change_password_page.dart';
 import 'package:myapp/features/novice/screens/notifications_page.dart';
 import 'package:myapp/features/novice/screens/guide_permis_page.dart';
 import 'package:myapp/features/novice/screens/project_create_page.dart';
+import 'package:myapp/features/novice/screens/project_details_page.dart';
+import 'package:myapp/features/novice/screens/demand_page.dart';
+import 'package:myapp/features/novice/screens/steps_page.dart';
+import 'package:myapp/features/novice/screens/step1_detail_page.dart';
+import 'package:myapp/features/novice/screens/step2_detail_page.dart';
+import 'package:myapp/features/novice/screens/step3_detail_page.dart';
+import 'package:myapp/features/novice/screens/step4_detail_page.dart';
+import 'package:myapp/features/novice/screens/step5_detail_page.dart';
+import 'package:myapp/features/novice/screens/step6_detail_page.dart';
+import 'package:myapp/features/novice/screens/experts_page.dart';
+import 'package:myapp/features/novice/screens/expert_detail_page.dart';
+import 'package:myapp/features/novice/screens/service_requests_page.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 // Fonction utilitaire pour le SVG (avec placeholder discret)
@@ -49,7 +60,7 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/',
       redirect: (BuildContext context, GoRouterState state) {
-        return '/splash';
+        return '/connexion';
       }
     ),
     // La route pour la page splash.
@@ -227,7 +238,7 @@ final GoRouter router = GoRouter(
         final noviceTabs = [
           NavTab('/Novice/home', 'Accueil', createSvgIcon('assets/icons/home_icon.svg')),
           NavTab('/Novice/messages', 'Messages', createSvgIcon('assets/icons/message_icon.svg')),
-          NavTab('/Novice/projet', 'Demandes', createSvgIcon('assets/icons/demande_icon.svg')),
+          NavTab('/Novice/demand', 'Demandes', createSvgIcon('assets/icons/demande_icon.svg')),
           NavTab('/Novice/profil', 'Profile', createSvgIcon('assets/icons/profile_icon.svg')),
         ];
         return AppShell(tabs: noviceTabs, child: child);
@@ -243,12 +254,6 @@ final GoRouter router = GoRouter(
           path: '/Novice/messages',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceMessagesPage();
-          },
-        ),
-        GoRoute(
-          path: '/Novice/projet',
-          builder: (BuildContext context, GoRouterState state) {
-            return const NoviceProjectsPage();
           },
         ),
         GoRoute(
@@ -270,9 +275,87 @@ final GoRouter router = GoRouter(
           },
         ),
         GoRoute(
+          path: '/Novice/project-details',
+          builder: (BuildContext context, GoRouterState state) {
+            int? id;
+            final extra = state.extra;
+            if (extra is Map) {
+              final v = extra['projectId'] ?? extra['id'];
+              if (v is int) id = v; else if (v is String) id = int.tryParse(v);
+            }
+            return NoviceProjectDetailsPage(projectId: id ?? 0);
+          },
+        ),
+        GoRoute(
+          path: '/Novice/demand',
+          builder: (BuildContext context, GoRouterState state) {
+            return const DemandPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStepsPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps/1',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStep1DetailPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps/2',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStep2DetailPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps/3',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStep3DetailPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps/4',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStep4DetailPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps/5',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStep5DetailPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/steps/6',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceStep6DetailPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/experts',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceExpertsPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/experts/detail',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceExpertDetailPage();
+          },
+        ),
+        GoRoute(
           path: '/Novice/my-projects',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceMyProjectsPage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/service-requests',
+          builder: (BuildContext context, GoRouterState state) {
+            return const NoviceServiceRequestsPage();
           },
         ),
         GoRoute(

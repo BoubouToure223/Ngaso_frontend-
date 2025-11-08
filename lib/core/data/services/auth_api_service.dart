@@ -33,4 +33,20 @@ class AuthApiService {
     }
     return _dio.post('/auth/register/professionnel', data: formData);
   }
+
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    await _dio.post(
+      '/auth/change-password',
+      data: {
+      'oldPassword': oldPassword,
+      'newPassword': newPassword,
+      'confirmPassword': confirmPassword,
+      },
+      options: Options(responseType: ResponseType.plain),
+    );
+  }
 }
