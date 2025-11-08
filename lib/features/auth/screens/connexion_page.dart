@@ -20,6 +20,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
   // Contrôleur pour le champ de saisie du mot de passe.
   final _passwordController = TextEditingController();
   bool _loading = false;
+  bool _obscurePwd = true;
 
   @override
   void dispose() {
@@ -127,9 +128,15 @@ class _ConnexionPageState extends State<ConnexionPage> {
                           // Champ de saisie pour le mot de passe.
                           TextFormField(
                             controller: _passwordController,
-                            obscureText: true,
+                            obscureText: _obscurePwd,
                             validator: (v) => v == null || v.isEmpty ? 'Entrez votre mot de passe' : null,
-                            decoration: const InputDecoration(labelText: 'Entrez votre mot de passe'),
+                            decoration: InputDecoration(
+                              labelText: 'Entrez votre mot de passe',
+                              suffixIcon: IconButton(
+                                onPressed: () => setState(() => _obscurePwd = !_obscurePwd),
+                                icon: Icon(_obscurePwd ? Icons.visibility_off : Icons.visibility),
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 12),
                           // Bouton pour la récupération du mot de passe.
@@ -170,8 +177,12 @@ class _ConnexionPageState extends State<ConnexionPage> {
                                         }
                                       } catch (e) {
                                         if (!mounted) return;
+                                        final raw = e.toString();
+                                        final msg = raw.startsWith('Exception: ')
+                                            ? raw.substring('Exception: '.length)
+                                            : raw;
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text(e.toString())),
+                                          SnackBar(content: Text(msg)),
                                         );
                                       } finally {
                                         if (mounted) setState(() => _loading = false);

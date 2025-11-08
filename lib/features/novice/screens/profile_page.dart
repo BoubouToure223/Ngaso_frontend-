@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/core/data/repositories/user_repository.dart';
 import 'package:myapp/core/data/models/user_me_response.dart';
+import 'package:myapp/core/storage/token_storage.dart';
 
 class NoviceProfilePage extends StatelessWidget {
   const NoviceProfilePage({super.key});
@@ -155,10 +156,13 @@ class NoviceProfilePage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Déconnexion bientôt disponible')),
-                    );
+                  onPressed: () async {
+                    await TokenStorage.instance.deleteToken();
+                    // Redirige vers la page de connexion et remplace la pile
+                    // pour éviter un retour en arrière sur des pages protégées
+                    // via le bouton Android.
+                    // ignore: use_build_context_synchronously
+                    context.go('/connexion');
                   },
                   icon: const Icon(Icons.logout_outlined),
                   label: const Text('Déconnexion'),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/repositories/project_repository.dart';
 
 class NoviceProjectCreatePage extends StatefulWidget {
   const NoviceProjectCreatePage({super.key});
@@ -90,12 +91,37 @@ class _NoviceProjectCreatePageState extends State<NoviceProjectCreatePage> {
 
   String? _req(String? v) => (v == null || v.trim().isEmpty) ? 'Requis' : null;
 
-  void _submit() {
+  void _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Projet créé (mock)')),
-    );
-    context.pop();
+    final budgetStr = _budgetCtrl.text.trim().replaceAll(' ', '');
+    final budget = double.tryParse(budgetStr);
+    if (budget == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Budget invalide')),
+      );
+      return;
+    }
+    try {
+      final repo = ProjectRepository();
+      await repo.createMyProject(
+        titre: _titleCtrl.text.trim(),
+        dimensionsTerrain: _sizeCtrl.text.trim(),
+        budget: budget,
+        localisation: _locationCtrl.text.trim(),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Projet créé')),
+      );
+      context.pop();
+    } catch (e) {
+      if (!mounted) return;
+      final raw = e.toString();
+      final msg = raw.startsWith('Exception: ') ? raw.substring('Exception: '.length) : raw;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg)),
+      );
+    }
   }
 }
 

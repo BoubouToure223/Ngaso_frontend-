@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/repositories/auth_repository.dart';
 
 class NoviceChangePasswordPage extends StatefulWidget {
   const NoviceChangePasswordPage({super.key});
@@ -14,6 +15,7 @@ class _NoviceChangePasswordPageState extends State<NoviceChangePasswordPage> {
   final _newCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
   bool _ob1 = true, _ob2 = true, _ob3 = true;
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -105,8 +107,10 @@ class _NoviceChangePasswordPageState extends State<NoviceChangePasswordPage> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      onPressed: _submit,
-                      child: const Text('Confirmer'),
+                      onPressed: _submitting ? null : _submit,
+                      child: _submitting
+                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('Confirmer'),
                     ),
                   ),
                 ],
@@ -119,13 +123,32 @@ class _NoviceChangePasswordPageState extends State<NoviceChangePasswordPage> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final valid = _formKey.currentState?.validate() ?? false;
     if (!valid) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Mot de passe mis à jour (mock)')),
-    );
-    context.pop();
+    setState(() => _submitting = true);
+    try {
+      final repo = AuthRepository();
+      await repo.changePassword(
+        oldPassword: _oldCtrl.text.trim(),
+        newPassword: _newCtrl.text.trim(),
+        confirmPassword: _confirmCtrl.text.trim(),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mot de passe mis à jour')),
+      );
+      context.pop();
+    } catch (e) {
+      if (!mounted) return;
+      final raw = e.toString();
+      final msg = raw.startsWith('Exception: ') ? raw.substring('Exception: '.length) : raw;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg)),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 }
 

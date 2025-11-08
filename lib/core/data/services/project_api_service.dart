@@ -1,0 +1,39 @@
+import 'package:dio/dio.dart';
+import '../../network/dio_client.dart';
+
+class ProjectApiService {
+  final Dio _dio = DioClient.I.dio;
+
+  Future<Map<String, dynamic>> createMyProject({
+    required String titre,
+    required String dimensionsTerrain,
+    required double budget,
+    required String localisation,
+  }) async {
+    final res = await _dio.post(
+      '/projets/me',
+      data: {
+        'titre': titre,
+        'dimensionsTerrain': dimensionsTerrain,
+        'budget': budget,
+        'localisation': localisation,
+      },
+    );
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  Future<List<Map<String, dynamic>>> listMyProjects() async {
+    final res = await _dio.get('/projets/me');
+    final data = res.data;
+    if (data is List) {
+      return data.map<Map<String, dynamic>>((e) => e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map)).toList();
+    }
+    if (data is Map && data['content'] is List) {
+      final list = data['content'] as List;
+      return list.map<Map<String, dynamic>>((e) => e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map)).toList();
+    }
+    return const [];
+  }
+}

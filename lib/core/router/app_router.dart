@@ -29,6 +29,7 @@ import 'package:myapp/features/novice/screens/change_password_page.dart';
 import 'package:myapp/features/novice/screens/notifications_page.dart';
 import 'package:myapp/features/novice/screens/guide_permis_page.dart';
 import 'package:myapp/features/novice/screens/project_create_page.dart';
+import 'package:myapp/features/novice/screens/project_details_page.dart';
 import 'package:myapp/features/novice/screens/demand_page.dart';
 import 'package:myapp/features/novice/screens/steps_page.dart';
 import 'package:myapp/features/novice/screens/step1_detail_page.dart';
@@ -271,6 +272,18 @@ final GoRouter router = GoRouter(
           path: '/Novice/project-create',
           builder: (BuildContext context, GoRouterState state) {
             return const NoviceProjectCreatePage();
+          },
+        ),
+        GoRoute(
+          path: '/Novice/project-details',
+          builder: (BuildContext context, GoRouterState state) {
+            int? id;
+            final extra = state.extra;
+            if (extra is Map) {
+              final v = extra['projectId'] ?? extra['id'];
+              if (v is int) id = v; else if (v is String) id = int.tryParse(v);
+            }
+            return NoviceProjectDetailsPage(projectId: id ?? 0);
           },
         ),
         GoRoute(

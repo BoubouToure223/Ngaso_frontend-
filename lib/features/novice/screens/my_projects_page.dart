@@ -1,13 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/repositories/project_repository.dart';
 
-class NoviceMyProjectsPage extends StatelessWidget {
+class NoviceMyProjectsPage extends StatefulWidget {
   const NoviceMyProjectsPage({super.key});
+
+  @override
+  State<NoviceMyProjectsPage> createState() => _NoviceMyProjectsPageState();
+}
+
+class _NoviceMyProjectsPageState extends State<NoviceMyProjectsPage> {
+  bool _loading = true;
+  String? _error;
+  List<_Project> _items = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final repo = ProjectRepository();
+      final list = await repo.listMyProjects();
+      final mapped = list.map<_Project>((m) => _Project(
+        id: _toInt(m['id']) ?? 0,
+        title: (m['titre'] ?? '').toString(),
+        budget: _formatAmount(_toDouble(m['budget']) ?? 0) + ' CFA',
+        size: (m['dimensionsTerrain'] ?? '').toString(),
+      )).toList();
+      if (!mounted) return;
+      setState(() { _items = mapped; _loading = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final items = _mockProjects;
     return Scaffold(
       backgroundColor: const Color(0xFFFCFAF7),
       appBar: PreferredSize(
@@ -33,7 +67,11 @@ class NoviceMyProjectsPage extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  onPressed: () => context.push('/Novice/project-create'),
+                  onPressed: () async {
+                    final before = _items.length;
+                    await context.push('/Novice/project-create');
+                    if (mounted) _load();
+                  },
                   icon: const Icon(Icons.add, color: Color(0xFF1C120D)),
                 ),
               ],
@@ -41,13 +79,64 @@ class NoviceMyProjectsPage extends StatelessWidget {
           ),
         ),
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 16),
-        itemBuilder: (context, i) => _ProjectTile(data: items[i]),
-      ),
+      body: _buildBody(),
     );
+  }
+
+  Widget _buildBody() {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      final raw = _error!;
+      final msg = raw.startsWith('Exception: ') ? raw.substring('Exception: '.length) : raw;
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(msg),
+            const SizedBox(height: 8),
+            ElevatedButton(onPressed: _load, child: const Text('Réessayer')),
+          ],
+        ),
+      );
+    }
+    if (_items.isEmpty) {
+      return const Center(child: Text('Aucun projet'));
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: _items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      itemBuilder: (context, i) => _ProjectTile(data: _items[i]),
+    );
+  }
+
+  int? _toInt(dynamic v) {
+    if (v is int) return v;
+    if (v is String) return int.tryParse(v);
+    if (v is double) return v.toInt();
+    return null;
+  }
+
+  double? _toDouble(dynamic v) {
+    if (v is double) return v;
+    if (v is int) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
+  String _formatAmount(double n) {
+    final s = n.toStringAsFixed(0);
+    final buf = StringBuffer();
+    int count = 0;
+    for (int i = s.length - 1; i >= 0; i--) {
+      buf.write(s[i]);
+      count++;
+      if (count == 3 && i != 0) {
+        buf.write(',');
+        count = 0;
+      }
+    }
+    return buf.toString().split('').reversed.join();
   }
 }
 
@@ -92,9 +181,7 @@ class _ProjectTile extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                   ),
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Voir détails: ${data.title}')),
-                    );
+                    context.push('/Novice/project-details', extra: {'projectId': data.id});
                   },
                   icon: const Icon(Icons.arrow_forward),
                   label: const Text('Voir détails'),
@@ -119,14 +206,11 @@ class _ProjectTile extends StatelessWidget {
 }
 
 class _Project {
+  final int id;
   final String title;
   final String budget;
   final String size;
-  const _Project({required this.title, required this.budget, required this.size});
+  const _Project({required this.id, required this.title, required this.budget, required this.size});
 }
 
-const _mockProjects = <_Project>[
-  _Project(title: 'Villa Moderne', budget: '15,000,000 CFA', size: '20×30m'),
-  _Project(title: 'Maison Familiale', budget: '10,000,000 CFA', size: '15×25m'),
-  _Project(title: 'Résidence de Luxe', budget: '25,000,000 CFA', size: '25×40m'),
-];
+// Les données sont désormais chargées depuis l'API /projets/me
