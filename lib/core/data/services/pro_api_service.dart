@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'package:http_parser/http_parser.dart';
+import 'package:myapp/core/data/models/user_me_response.dart';
 import '../../network/dio_client.dart';
 import '../models/pro_dashboard.dart';
 import '../models/app_notification.dart';
@@ -45,6 +46,14 @@ class ProApiService {
     return const [];
   }
 
+  Future<UserMeResponse> getUserMe() async {
+    final res = await _dio.get('/users/me');
+    final data = res.data;
+    if (data is Map<String, dynamic>) return UserMeResponse.fromJson(data);
+    if (data is Map) return UserMeResponse.fromJson(Map<String, dynamic>.from(data));
+    return const UserMeResponse();
+  }
+
   Future<List<dynamic>> uploadMyRealisationImage({
     required String filePath,
     String? fileName,
@@ -87,6 +96,13 @@ class ProApiService {
 
   Future<Map<String, dynamic>> getProjetById(int id) async {
     final res = await _dio.get('/projets/$id');
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  Future<Map<String, dynamic>> getProfessionnelProfil(int id) async {
+    final res = await _dio.get('/professionnels/$id/profil');
     final data = res.data;
     if (data is Map<String, dynamic>) return data;
     return Map<String, dynamic>.from(data as Map);
@@ -161,6 +177,28 @@ class ProApiService {
     if (data is List) return data;
     if (data is Map && data['content'] is List) return List.from(data['content']);
     return const [];
+  }
+
+  Future<List<dynamic>> getMyNovicePropositions() async {
+    final res = await _dio.get('/novices/me/propositions');
+    final data = res.data;
+    if (data is List) return data;
+    if (data is Map && data['content'] is List) return List.from(data['content']);
+    return const [];
+  }
+
+  Future<Map<String, dynamic>> acceptMyNoviceProposition(int propositionId) async {
+    final res = await _dio.post('/novices/me/propositions/$propositionId/accepter');
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  Future<Map<String, dynamic>> refuseMyNoviceProposition(int propositionId) async {
+    final res = await _dio.post('/novices/me/propositions/$propositionId/refuser');
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    return Map<String, dynamic>.from(data as Map);
   }
 
   Future<List<AppNotification>> getMyNotifications() async {

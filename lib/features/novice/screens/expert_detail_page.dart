@@ -1,8 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/services/pro_api_service.dart';
+import 'package:myapp/core/widgets/auth_image.dart';
 
-class NoviceExpertDetailPage extends StatelessWidget {
-  const NoviceExpertDetailPage({super.key});
+class NoviceExpertDetailPage extends StatefulWidget {
+  const NoviceExpertDetailPage({super.key, this.professionnelId});
+  final int? professionnelId;
+
+  @override
+  State<NoviceExpertDetailPage> createState() => _NoviceExpertDetailPageState();
+}
+
+class _NoviceExpertDetailPageState extends State<NoviceExpertDetailPage> {
+  late Future<Map<String, dynamic>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    final id = widget.professionnelId ?? 0;
+    _future = ProApiService().getProfessionnelProfil(id);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,134 +51,112 @@ class NoviceExpertDetailPage extends StatelessWidget {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: Image.asset(
-                  'assets/images/etape5_img.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Mamadou Traoré',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: const Color(0xFF1C120D),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            Text(
-              'Architecte',
-              style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF6B4F4A)),
-            ),
-            const SizedBox(height: 4),
-            Row(
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snap.hasError) {
+            return Center(child: Text('Erreur: ${snap.error}'));
+          }
+          final data = snap.data ?? const {};
+          final prenom = (data['prenom'] ?? '').toString();
+          final nom = (data['nom'] ?? '').toString();
+          final name = [prenom, nom].where((e) => e.toString().trim().isNotEmpty).join(' ');
+          final role = (data['specialiteLibelle'] ?? '').toString();
+          final tel = (data['telephone'] ?? '').toString();
+          final addr = (data['adresse'] ?? '').toString();
+          final ent = (data['entreprise'] ?? '').toString();
+          final desc = (data['description'] ?? '').toString();
+          final realisations = (data['realisations'] is List) ? List<String>.from((data['realisations'] as List).map((e) => e.toString())) : const <String>[];
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.star, size: 16, color: Color(0xFF7C6EE6)),
-                const SizedBox(width: 4),
-                Text('4.5★', style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF1C120D))),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Informations de contact',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: const Color(0xFF1C120D),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 10),
-            _InfoRow(icon: Icons.phone, text: '+223 77 123 456'),
-            _InfoRow(icon: Icons.location_on_outlined, text: 'Bamako, Mali'),
-            _InfoRow(icon: Icons.apartment_outlined, text: 'Traoré Architecture'),
-            const SizedBox(height: 16),
-            Text(
-              'À propos de cet expert',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: const Color(0xFF1C120D),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Mamadou Traoré est un architecte basé à Bamako, spécialisé dans la conception de résidences modernes et fonctionnelles. Avec plus de 10 ans d'expérience, il a réalisé de nombreux projets à travers le Mali, alliant esthétique et durabilité.",
-              style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF1C120D)),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Réalisations',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: const Color(0xFF1C120D),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 160,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _projects.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  final p = _projects[index];
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          width: 200,
-                          height: 120,
-                          color: const Color(0xFFF0ECE9),
-                          child: Image.asset(p.imageAsset, fit: BoxFit.cover),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      SizedBox(
-                        width: 200,
-                        child: Text(
-                          p.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF1C120D)),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3F51B5),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                if (realisations.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: AuthImage(url: realisations.first),
                     ),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Contacter cet expert')),
-                      );
-                    },
-                    child: const Text('Contacter cet expert'),
+                  ),
+                const SizedBox(height: 12),
+                Text(
+                  name.isNotEmpty ? name : ent,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: const Color(0xFF1C120D),
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
+                if (role.isNotEmpty)
+                  Text(
+                    role,
+                    style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF6B4F4A)),
+                  ),
+                const SizedBox(height: 16),
+                Text(
+                  'Informations de contact',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: const Color(0xFF1C120D),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (tel.isNotEmpty) _InfoRow(icon: Icons.phone, text: tel),
+                if (addr.isNotEmpty) _InfoRow(icon: Icons.location_on_outlined, text: addr),
+                if (ent.isNotEmpty) _InfoRow(icon: Icons.apartment_outlined, text: ent),
+                const SizedBox(height: 16),
+                Text(
+                  'À propos de cet expert',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: const Color(0xFF1C120D),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  desc.isNotEmpty ? desc : '—',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF1C120D)),
+                ),
+                if (realisations.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Réalisations',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: const Color(0xFF1C120D),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 160,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: realisations.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                      itemBuilder: (context, index) {
+                        final url = realisations[index];
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            width: 200,
+                            height: 120,
+                            child: AuthImage(url: url, fit: BoxFit.cover),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
               ],
             ),
-            const SizedBox(height: 10),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
