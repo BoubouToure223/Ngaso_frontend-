@@ -336,7 +336,13 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/Novice/experts/detail',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceExpertDetailPage();
+            int? proId;
+            final extra = state.extra;
+            if (extra is Map) {
+              final v = extra['professionnelId'];
+              if (v is int) proId = v; else if (v is String) proId = int.tryParse(v);
+            }
+            return NoviceExpertDetailPage(professionnelId: proId);
           },
         ),
         GoRoute(

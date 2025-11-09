@@ -101,6 +101,13 @@ class ProApiService {
     return Map<String, dynamic>.from(data as Map);
   }
 
+  Future<Map<String, dynamic>> getProfessionnelProfil(int id) async {
+    final res = await _dio.get('/professionnels/$id/profil');
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    return Map<String, dynamic>.from(data as Map);
+  }
+
   Future<Map<String, dynamic>> submitPropositionMultipart({
     required int professionnelId,
     required int projetId,
@@ -170,6 +177,28 @@ class ProApiService {
     if (data is List) return data;
     if (data is Map && data['content'] is List) return List.from(data['content']);
     return const [];
+  }
+
+  Future<List<dynamic>> getMyNovicePropositions() async {
+    final res = await _dio.get('/novices/me/propositions');
+    final data = res.data;
+    if (data is List) return data;
+    if (data is Map && data['content'] is List) return List.from(data['content']);
+    return const [];
+  }
+
+  Future<Map<String, dynamic>> acceptMyNoviceProposition(int propositionId) async {
+    final res = await _dio.post('/novices/me/propositions/$propositionId/accepter');
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  Future<Map<String, dynamic>> refuseMyNoviceProposition(int propositionId) async {
+    final res = await _dio.post('/novices/me/propositions/$propositionId/refuser');
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    return Map<String, dynamic>.from(data as Map);
   }
 
   Future<List<AppNotification>> getMyNotifications() async {
