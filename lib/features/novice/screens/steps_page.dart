@@ -1,13 +1,98 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/services/project_api_service.dart';
 
-class NoviceStepsPage extends StatelessWidget {
-  const NoviceStepsPage({super.key});
+class NoviceStepsPage extends StatefulWidget {
+  const NoviceStepsPage({super.key, this.projectId});
+  final int? projectId; // TODO: brancher l'id réel via navigation
+
+  @override
+  State<NoviceStepsPage> createState() => _NoviceStepsPageState();
+}
+
+class _NoviceStepsPageState extends State<NoviceStepsPage> {
+  bool _loading = true;
+  String? _error;
+  List<_Step> _steps = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final api = ProjectApiService();
+      final pid = widget.projectId ?? 1; // fallback temporaire
+      final list = await api.getProjectSteps(projectId: pid);
+      final mapped = list.map<_Step>((e) {
+        final ordre = _asInt(e['ordre']);
+        final estValider = _asBool(e['estValider']);
+        final nom = (e['modeleNom'] ?? '').toString();
+        final etapeId = _asInt(e['etapeId']);
+        return _Step(
+          title: nom.isNotEmpty ? nom : 'Étape ${ordre > 0 ? ordre : ''}'.trim(),
+          subtitle: estValider ? 'Terminé' : 'À venir',
+          ordre: ordre,
+          imageAsset: _imageForOrdre(ordre),
+          etapeId: etapeId,
+        );
+      }).toList(growable: false);
+      if (!mounted) return;
+      setState(() {
+        _steps = mapped;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  int _asInt(dynamic v) {
+    if (v is int) return v;
+    if (v is double) return v.toInt();
+    if (v is String) return int.tryParse(v) ?? 0;
+    return 0;
+  }
+
+  bool _asBool(dynamic v) {
+    if (v is bool) return v;
+    if (v is String) return v.toLowerCase() == 'true' || v == '1';
+    if (v is num) return v != 0;
+    return false;
+  }
+
+  String _imageForOrdre(int ordre) {
+    switch (ordre) {
+      case 1:
+        return 'assets/images/etape1_img.png';
+      case 2:
+        return 'assets/images/etape2_img.png';
+      case 3:
+        return 'assets/images/etape3_img.png';
+      case 4:
+        return 'assets/images/etape4_img.png';
+      case 5:
+        return 'assets/images/etape5_img.png';
+      case 6:
+        return 'assets/images/etape6_img.png';
+      default:
+        return 'assets/images/etape1_img.png';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final steps = _mockSteps;
     return Scaffold(
       backgroundColor: const Color(0xFFFCFAF7),
       appBar: PreferredSize(
@@ -35,38 +120,74 @@ class NoviceStepsPage extends StatelessWidget {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      body: _buildBody(theme),
+    );
+  }
+
+  Widget _buildBody(ThemeData theme) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      final raw = _error!;
+      final msg = raw.startsWith('Exception: ') ? raw.substring('Exception: '.length) : raw;
+      return Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Suivez et validez chaque étape de votre projet de maison.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF6B4F4A)),
-            ),
-            const SizedBox(height: 12),
-            Text('Progression', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF1C120D))),
+            Text(msg, style: theme.textTheme.bodyMedium),
             const SizedBox(height: 8),
-            _Progress(value: 0.10),
-            const SizedBox(height: 16),
-            for (final s in steps) _StepCard(data: s),
-            const SizedBox(height: 24),
+            ElevatedButton(onPressed: _load, child: const Text('Réessayer')),
           ],
         ),
+      );
+    }
+
+    final steps = _steps;
+    final done = steps.where((e) => e.subtitle.toLowerCase().contains('termin')).length;
+    final total = steps.length;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Suivez et validez chaque étape de votre projet de maison.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF6B4F4A)),
+          ),
+          const SizedBox(height: 12),
+          Text('Progression', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF1C120D))),
+          const SizedBox(height: 8),
+          _Progress(value: _computeProgress(steps), done: done, total: total),
+          const SizedBox(height: 16),
+          for (final s in steps) _StepCard(data: s),
+          const SizedBox(height: 24),
+        ],
       ),
     );
+  }
+
+  double _computeProgress(List<_Step> steps) {
+    if (steps.isEmpty) return 0.0;
+    final done = steps.where((e) => e.subtitle.toLowerCase().contains('termin')).length;
+    return done / steps.length;
   }
 }
 
 class _Progress extends StatelessWidget {
   final double value;
-  const _Progress({required this.value});
+  final int done;
+  final int total;
+  const _Progress({required this.value, required this.done, required this.total});
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final percent = (value * 100).round();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text('$percent%', style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF6B4F4A))),
+        const SizedBox(height: 6),
         LinearProgressIndicator(
           value: value,
           minHeight: 6,
@@ -74,7 +195,7 @@ class _Progress extends StatelessWidget {
           valueColor: const AlwaysStoppedAnimation(Color(0xFF3F51B5)),
         ),
         const SizedBox(height: 6),
-        Text('$percent%', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF6B4F4A))),
+        Text('$done/$total', style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF6B4F4A))),
       ],
     );
   }
@@ -108,6 +229,11 @@ class _StepCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
+                      'Étape ${data.ordre}',
+                      style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF7D7D7D)),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
                       data.title,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: const Color(0xFF1C120D),
@@ -129,23 +255,9 @@ class _StepCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () {
-                  if (data.title.startsWith('Étape 1')) {
-                    context.push('/Novice/steps/1');
-                  } else if (data.title.startsWith('Étape 2')) {
-                    context.push('/Novice/steps/2');
-                  } else if (data.title.startsWith('Étape 3')) {
-                    context.push('/Novice/steps/3');
-                  } else if (data.title.startsWith('Étape 4')) {
-                    context.push('/Novice/steps/4');
-                  } else if (data.title.startsWith('Étape 5')) {
-                    context.push('/Novice/steps/5');
-                  } else if (data.title.startsWith('Étape 6')) {
-                    context.push('/Novice/steps/6');
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Voir détails: ${data.title}')),
-                    );
-                  }
+                  final etapeId = data.etapeId;
+                  final pid = (context.findAncestorStateOfType<_NoviceStepsPageState>()?.widget.projectId) ?? 1;
+                  context.push('/Novice/step-details/$etapeId', extra: {'projectId': pid});
                 },
                 child: const Text('Voir détails'),
               ),
@@ -161,14 +273,7 @@ class _Step {
   final String title;
   final String subtitle;
   final String imageAsset;
-  const _Step({required this.title, required this.subtitle, required this.imageAsset});
+  final int ordre;
+  final int etapeId;
+  const _Step({required this.title, required this.subtitle, required this.imageAsset, required this.ordre, required this.etapeId});
 }
-
-const _mockSteps = <_Step>[
-  _Step(title: 'Étape 1', subtitle: 'Étude du terrain\nTerminé', imageAsset: 'assets/images/etape1_img.png'),
-  _Step(title: 'Étape 2', subtitle: 'Demande de permis de construire\nÀ venir', imageAsset: 'assets/images/etape2_img.png'),
-  _Step(title: 'Étape 3', subtitle: 'Fondation\nÀ venir', imageAsset: 'assets/images/etape3_img.png'),
-  _Step(title: 'Étape 4', subtitle: 'Élévation des murs\nÀ venir', imageAsset: 'assets/images/etape4_img.png'),
-  _Step(title: 'Étape 5', subtitle: 'Couverture\nÀ venir', imageAsset: 'assets/images/etape5_img.png'),
-  _Step(title: 'Étape 6', subtitle: 'Finition\nÀ venir', imageAsset: 'assets/images/etape6_img.png'),
-];
