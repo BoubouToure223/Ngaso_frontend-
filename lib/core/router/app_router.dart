@@ -31,12 +31,8 @@ import 'package:myapp/features/novice/screens/project_create_page.dart';
 import 'package:myapp/features/novice/screens/project_details_page.dart';
 import 'package:myapp/features/novice/screens/demand_page.dart';
 import 'package:myapp/features/novice/screens/steps_page.dart';
-import 'package:myapp/features/novice/screens/step1_detail_page.dart';
-import 'package:myapp/features/novice/screens/step2_detail_page.dart';
-import 'package:myapp/features/novice/screens/step3_detail_page.dart';
-import 'package:myapp/features/novice/screens/step4_detail_page.dart';
-import 'package:myapp/features/novice/screens/step5_detail_page.dart';
-import 'package:myapp/features/novice/screens/step6_detail_page.dart';
+// Pages statiques d'étapes non utilisées: on route maintenant toutes les étapes vers la page dynamique
+import 'package:myapp/features/novice/screens/step_detail_page.dart';
 import 'package:myapp/features/novice/screens/experts_page.dart';
 import 'package:myapp/features/novice/screens/expert_detail_page.dart';
 import 'package:myapp/features/novice/screens/service_requests_page.dart';
@@ -294,37 +290,87 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/Novice/steps/1',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceStep1DetailPage();
+            int? projectId;
+            final extra = state.extra;
+            if (extra is Map && extra['projectId'] != null) {
+              final v = extra['projectId'];
+              if (v is int) projectId = v; else if (v is String) projectId = int.tryParse(v);
+            }
+            return NoviceStepDetailPage(etapeId: 1, projectId: projectId ?? 1);
           },
         ),
         GoRoute(
           path: '/Novice/steps/2',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceStep2DetailPage();
+            int? projectId;
+            final extra = state.extra;
+            if (extra is Map && extra['projectId'] != null) {
+              final v = extra['projectId'];
+              if (v is int) projectId = v; else if (v is String) projectId = int.tryParse(v);
+            }
+            return NoviceStepDetailPage(etapeId: 2, projectId: projectId ?? 1);
           },
         ),
         GoRoute(
           path: '/Novice/steps/3',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceStep3DetailPage();
+            int? projectId;
+            final extra = state.extra;
+            if (extra is Map && extra['projectId'] != null) {
+              final v = extra['projectId'];
+              if (v is int) projectId = v; else if (v is String) projectId = int.tryParse(v);
+            }
+            return NoviceStepDetailPage(etapeId: 3, projectId: projectId ?? 1);
           },
         ),
         GoRoute(
           path: '/Novice/steps/4',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceStep4DetailPage();
+            int? projectId;
+            final extra = state.extra;
+            if (extra is Map && extra['projectId'] != null) {
+              final v = extra['projectId'];
+              if (v is int) projectId = v; else if (v is String) projectId = int.tryParse(v);
+            }
+            return NoviceStepDetailPage(etapeId: 4, projectId: projectId ?? 1);
           },
         ),
         GoRoute(
           path: '/Novice/steps/5',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceStep5DetailPage();
+            int? projectId;
+            final extra = state.extra;
+            if (extra is Map && extra['projectId'] != null) {
+              final v = extra['projectId'];
+              if (v is int) projectId = v; else if (v is String) projectId = int.tryParse(v);
+            }
+            return NoviceStepDetailPage(etapeId: 5, projectId: projectId ?? 1);
           },
         ),
         GoRoute(
           path: '/Novice/steps/6',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceStep6DetailPage();
+            int? projectId;
+            final extra = state.extra;
+            if (extra is Map && extra['projectId'] != null) {
+              final v = extra['projectId'];
+              if (v is int) projectId = v; else if (v is String) projectId = int.tryParse(v);
+            }
+            return NoviceStepDetailPage(etapeId: 6, projectId: projectId ?? 1);
+          },
+        ),
+        GoRoute(
+          path: '/Novice/step-details/:id',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.pathParameters['id'];
+            final etapeId = int.tryParse(idStr ?? '') ?? 0;
+            final extra = state.extra;
+            int? projectId;
+            if (extra is Map && extra['projectId'] != null) {
+              final v = extra['projectId'];
+              if (v is int) projectId = v; else if (v is String) projectId = int.tryParse(v);
+            }
+            return NoviceStepDetailPage(etapeId: etapeId, projectId: projectId ?? 1);
           },
         ),
         GoRoute(
@@ -354,7 +400,13 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/Novice/service-requests',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceServiceRequestsPage();
+            int? projectId;
+            final extra = state.extra;
+            if (extra is Map) {
+              final v = extra['projectId'] ?? extra['id'];
+              if (v is int) projectId = v; else if (v is String) projectId = int.tryParse(v);
+            }
+            return NoviceServiceRequestsPage(projectId: projectId ?? 0);
           },
         ),
         GoRoute(

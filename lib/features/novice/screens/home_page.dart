@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/core/data/repositories/dashboard_repository.dart';
+import 'package:myapp/core/data/services/notification_api_service.dart';
 import 'package:myapp/core/data/models/dashboard_novice_response.dart';
 
 class NoviceHomePage extends StatelessWidget {
@@ -68,12 +69,10 @@ class NoviceHomePage extends StatelessWidget {
                       },
                     ),
                   ),
-                  FutureBuilder<DashboardNoviceResponse>(
-                    future: futureDash,
+                  FutureBuilder<int>(
+                    future: NotificationApiService().countUnread(),
                     builder: (context, snapshot) {
-                      final unread = (snapshot.hasData)
-                          ? (snapshot.data?.unreadNotifications ?? 0)
-                          : 0;
+                      final unread = snapshot.data ?? 0;
                       return Stack(
                         clipBehavior: Clip.none,
                         children: [
@@ -391,7 +390,26 @@ class NoviceHomePage extends StatelessWidget {
                       icon: Icons.assignment,
                       title: 'Mes demandes services',
                       onTap: () {
-                        context.push('/Novice/service-requests');
+                        () async {
+                          try {
+                            final dash = await DashboardRepository().getNoviceDashboard();
+                            final id = dash.lastProject?.id;
+                            if (id != null && id != 0) {
+                              // Ouvrir directement les demandes du dernier projet
+                              // en passant projectId
+                              // ignore: use_build_context_synchronously
+                              context.push('/Novice/service-requests', extra: {'projectId': id});
+                            } else {
+                              // Aucun dernier projet -> rediriger vers Mes projets
+                              // ignore: use_build_context_synchronously
+                              context.push('/Novice/my-projects');
+                            }
+                          } catch (_) {
+                            // En cas d'erreur, fallback Mes projets
+                            // ignore: use_build_context_synchronously
+                            context.push('/Novice/my-projects');
+                          }
+                        }();
                       },
                     ),
                     const SizedBox(height: 20),
