@@ -103,10 +103,12 @@ class _NoviceStepDetailPageState extends State<NoviceStepDetailPage> {
     s = s.replaceAll('\\', '/');
     if (s.startsWith('http://') || s.startsWith('https://')) return s;
     final lower = s.toLowerCase();
-    final idx = lower.indexOf('/uploads/');
-    if (idx != -1) {
-      final path = s.substring(idx); // includes leading /uploads/
-      return '${ApiConfig.baseUrl}$path';
+    // Accept both '/uploads/...' and 'uploads/...', prefix with BASE_API (includes '/api/v1')
+    if (lower.startsWith('/uploads/')) {
+      return '${ApiConfig.baseUrl}$s';
+    }
+    if (lower.startsWith('uploads/')) {
+      return '${ApiConfig.baseUrl}/$s';
     }
     return null;
   }
@@ -245,12 +247,12 @@ class _NoviceStepDetailPageState extends State<NoviceStepDetailPage> {
                           ),
                         ),
                       const SizedBox(height: 8),
-                      if (_toHttpUrl((it['urlImage'] ?? '').toString()) != null)
+                      if (((it['urlImage'] ?? '').toString()).trim().isNotEmpty)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: AspectRatio(
                             aspectRatio: 16 / 9,
-                            child: _HeaderImage(url: _toHttpUrl((it['urlImage'] ?? '').toString())).build(context),
+                            child: _HeaderImage(url: (it['urlImage'] ?? '').toString()),
                           ),
                         ),
                     ],
@@ -399,12 +401,12 @@ class _NoviceStepDetailPageState extends State<NoviceStepDetailPage> {
                     ),
                   ),
                 const SizedBox(height: 8),
-                if (_toHttpUrl((it['urlImage'] ?? '').toString()) != null)
+                if (((it['urlImage'] ?? '').toString()).trim().isNotEmpty)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: AspectRatio(
                       aspectRatio: 16 / 9,
-                      child: _HeaderImage(url: _toHttpUrl((it['urlImage'] ?? '').toString())).build(context),
+                      child: _HeaderImage(url: (it['urlImage'] ?? '').toString()),
                     ),
                   ),
                 const SizedBox(height: 6),
@@ -500,12 +502,12 @@ class _NoviceStepDetailPageState extends State<NoviceStepDetailPage> {
                   ),
                 ),
               const SizedBox(height: 8),
-              if (_toHttpUrl((contentIllustrations[0]['urlImage'] ?? '').toString()) != null)
+              if (((contentIllustrations[0]['urlImage'] ?? '').toString()).trim().isNotEmpty)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
-                    child: _HeaderImage(url: _toHttpUrl((contentIllustrations[0]['urlImage'] ?? '').toString())).build(context),
+                    child: _HeaderImage(url: (contentIllustrations[0]['urlImage'] ?? '').toString()),
                   ),
                 ),
               const SizedBox(height: 6),
@@ -527,12 +529,12 @@ class _NoviceStepDetailPageState extends State<NoviceStepDetailPage> {
                   ),
                 ),
               const SizedBox(height: 8),
-              if (_toHttpUrl((contentIllustrations[1]['urlImage'] ?? '').toString()) != null)
+              if (((contentIllustrations[1]['urlImage'] ?? '').toString()).trim().isNotEmpty)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
-                    child: _HeaderImage(url: _toHttpUrl((contentIllustrations[1]['urlImage'] ?? '').toString())).build(context),
+                    child: _HeaderImage(url: (contentIllustrations[1]['urlImage'] ?? '').toString()),
                   ),
                 ),
               const SizedBox(height: 6),
@@ -819,10 +821,19 @@ class _HeaderImage extends StatelessWidget {
   }
 
   Widget _buildImage(String? url) {
-    if (url == null || url.isEmpty || !(url.startsWith('http://') || url.startsWith('https://'))) {
+    if (url == null || url.isEmpty) {
       return Container(color: const Color(0xFFEDE7E3), child: const Center(child: Icon(Icons.image_not_supported_outlined, size: 48, color: Color(0xFF6B4F4A))));
     }
-    return Image.network(url, fit: BoxFit.cover, errorBuilder: (_, __, ___) {
+    var s = url.replaceAll('\\', '/');
+    if (!(s.startsWith('http://') || s.startsWith('https://'))) {
+      final lower = s.toLowerCase();
+      if (lower.startsWith('/uploads/')) {
+        s = '${ApiConfig.baseUrl}$s';
+      } else if (lower.startsWith('uploads/')) {
+        s = '${ApiConfig.baseUrl}/$s';
+      }
+    }
+    return Image.network(s, fit: BoxFit.cover, errorBuilder: (_, __, ___) {
       return Container(color: const Color(0xFFEDE7E3), child: const Center(child: Icon(Icons.broken_image_outlined, size: 48, color: Color(0xFF6B4F4A))));
     });
   }
@@ -878,10 +889,10 @@ class _IllustrationTile extends StatelessWidget {
     var s = url.replaceAll('\\', '/');
     if (!(s.startsWith('http://') || s.startsWith('https://'))) {
       final lower = s.toLowerCase();
-      final idx = lower.indexOf('/uploads/');
-      if (idx != -1) {
-        final path = s.substring(idx);
-        s = '${ApiConfig.baseUrl}$path';
+      if (lower.startsWith('/uploads/')) {
+        s = '${ApiConfig.baseUrl}$s';
+      } else if (lower.startsWith('uploads/')) {
+        s = '${ApiConfig.baseUrl}/$s';
       } else {
         return const Icon(Icons.image_outlined, color: Color(0xFF6B4F4A));
       }
