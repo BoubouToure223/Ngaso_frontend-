@@ -171,21 +171,46 @@ class _ProjectTile extends StatelessWidget {
                 style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF6B4F4A)),
               ),
               const SizedBox(height: 8),
-              SizedBox(
-                height: 36,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3F51B5),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 36,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF3F51B5),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        onPressed: () {
+                          context.push('/Novice/project-details', extra: {'projectId': data.id});
+                        },
+                        icon: const Icon(Icons.arrow_forward),
+                        label: const Text('Voir détails'),
+                      ),
+                    ),
                   ),
-                  onPressed: () {
-                    context.push('/Novice/project-details', extra: {'projectId': data.id});
-                  },
-                  icon: const Icon(Icons.arrow_forward),
-                  label: const Text('Voir détails'),
-                ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SizedBox(
+                      height: 36,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF1C120D),
+                          side: const BorderSide(color: Color(0xFFE7E3DF)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        onPressed: () {
+                          context.push('/Novice/service-requests', extra: {'projectId': data.id});
+                        },
+                        icon: const Icon(Icons.assignment),
+                        label: const Text('Voir demandes'),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

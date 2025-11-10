@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/services/project_api_service.dart';
+import 'package:myapp/core/data/repositories/dashboard_repository.dart';
+import 'package:myapp/core/data/models/dashboard_novice_response.dart';
 
 class NoviceServiceRequestsPage extends StatefulWidget {
-  const NoviceServiceRequestsPage({super.key});
+  const NoviceServiceRequestsPage({super.key, required this.projectId});
+  final int projectId;
 
   @override
   State<NoviceServiceRequestsPage> createState() => _NoviceServiceRequestsPageState();
@@ -10,11 +14,104 @@ class NoviceServiceRequestsPage extends StatefulWidget {
 
 class _NoviceServiceRequestsPageState extends State<NoviceServiceRequestsPage> {
   int selectedIndex = 0; // 0=Toutes,1=Attente,2=Validées,3=Rejetées
+  bool _loading = true;
+  String? _error;
+  List<_ServiceRequest> _items = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    // Determine target projectId: use provided one, else fallback to last project from dashboard
+    int targetProjectId = widget.projectId;
+    if (targetProjectId == 0) {
+      try {
+        final DashboardNoviceResponse dash = await DashboardRepository().getNoviceDashboard();
+        final lastId = dash.lastProject?.id ?? 0;
+        if (lastId != 0) {
+          targetProjectId = lastId;
+        } else {
+          setState(() {
+            _error = "Aucun projet trouvé. Allez dans 'Mes projets' pour en créer ou en sélectionner un.";
+            _loading = false;
+          });
+          return;
+        }
+      } catch (e) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+        return;
+      }
+    }
+    try {
+      final api = ProjectApiService();
+      final list = await api.getProjectDemandes(projectId: targetProjectId);
+      final mapped = list
+          .where((e) => e is Map)
+          .map<_ServiceRequest?>((raw) {
+            try {
+              final m = Map<String, dynamic>.from(raw as Map);
+              final statutRaw = (m['statut'])?.toString() ?? '';
+              final st = _mapBackendStatus(statutRaw);
+              final proNom = (m['professionnelNom'])?.toString() ?? '';
+              final proPrenom = (m['professionnelPrenom'])?.toString() ?? '';
+              final fullName = [proPrenom, proNom].where((s) => s.isNotEmpty).join(' ').trim();
+              final entreprise = (m['professionnelEntreprise'])?.toString() ?? '';
+              final service = (m['etapeModeleNom'])?.toString() ?? '';
+              final dateVal = m['dateCreation'];
+              DateTime? createdAt;
+              if (dateVal is int) {
+                createdAt = DateTime.fromMillisecondsSinceEpoch(dateVal);
+              } else if (dateVal is String) {
+                createdAt = DateTime.tryParse(dateVal);
+              }
+              return _ServiceRequest(
+                name: fullName.isNotEmpty ? fullName : (entreprise.isNotEmpty ? entreprise : 'Professionnel inconnu'),
+                service: service.isNotEmpty ? service : 'Service',
+                status: st,
+                createdAt: createdAt,
+              );
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<_ServiceRequest>()
+          .toList(growable: false);
+      if (!mounted) return;
+      setState(() {
+        _items = mapped;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  _Status _mapBackendStatus(String raw) {
+    final s = raw.toLowerCase();
+    if (s.contains('attent')) return _Status.pending;
+    if (s.contains('valid')) return _Status.approved;
+    if (s.contains('rejet') || s.contains('refus')) return _Status.rejected;
+    return _Status.pending;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final items = _mockRequests.where((e) {
+    final items = _items.where((e) {
       switch (selectedIndex) {
         case 1:
           return e.status == _Status.pending;
@@ -26,6 +123,10 @@ class _NoviceServiceRequestsPageState extends State<NoviceServiceRequestsPage> {
           return true;
       }
     }).toList();
+    final allCount = _items.length;
+    final pendingCount = _items.where((e) => e.status == _Status.pending).length;
+    final approvedCount = _items.where((e) => e.status == _Status.approved).length;
+    final rejectedCount = _items.where((e) => e.status == _Status.rejected).length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFCFAF7),
@@ -62,17 +163,32 @@ class _NoviceServiceRequestsPageState extends State<NoviceServiceRequestsPage> {
             child: _Filters(
               selectedIndex: selectedIndex,
               onChanged: (i) => setState(() => selectedIndex = i),
-              counts: const [4, 2, 1, 1],
+              counts: [allCount, pendingCount, approvedCount, rejectedCount],
             ),
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, i) => _RequestCard(data: items[i]),
-            ),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : (_error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_error!, style: Theme.of(context).textTheme.bodyMedium),
+                            const SizedBox(height: 8),
+                            ElevatedButton(onPressed: _load, child: const Text('Réessayer')),
+                          ],
+                        ),
+                      )
+                    : (items.isEmpty
+                        ? const Center(child: Text('Aucune demande'))
+                        : ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: items.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            itemBuilder: (context, i) => _RequestCard(data: items[i]),
+                          ))),
           ),
         ],
       ),
@@ -248,9 +364,23 @@ class _RequestCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      data.service,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF6B4F4A)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            data.service,
+                            style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF6B4F4A)),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (data.createdAt != null) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            _formatDate(data.createdAt!),
+                            style: theme.textTheme.labelSmall?.copyWith(color: const Color(0xFF6B4F4A)),
+                          ),
+                        ]
+                      ],
                     ),
                   ],
                 ),
@@ -282,6 +412,14 @@ class _RequestCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatDate(DateTime d) {
+    // Simple dd/MM/yyyy formatting without intl
+    final dd = d.day.toString().padLeft(2, '0');
+    final mm = d.month.toString().padLeft(2, '0');
+    final yyyy = d.year.toString();
+    return '$dd/$mm/$yyyy';
   }
 }
 
@@ -331,12 +469,6 @@ class _ServiceRequest {
   final String name;
   final String service;
   final _Status status;
-  const _ServiceRequest({required this.name, required this.service, required this.status});
+  final DateTime? createdAt;
+  const _ServiceRequest({required this.name, required this.service, required this.status, this.createdAt});
 }
-
-const _mockRequests = <_ServiceRequest>[
-  _ServiceRequest(name: 'Mamadou Traoré', service: 'Obtention du permis de construire', status: _Status.pending),
-  _ServiceRequest(name: 'Mamadou Traoré', service: 'Obtention du permis de construire', status: _Status.approved),
-  _ServiceRequest(name: 'Mamadou Traoré', service: 'Obtention du permis de construire', status: _Status.rejected),
-  _ServiceRequest(name: 'Mamadou Traoré', service: 'Obtention du permis de construire', status: _Status.pending),
-];

@@ -400,7 +400,13 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/Novice/service-requests',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceServiceRequestsPage();
+            int? projectId;
+            final extra = state.extra;
+            if (extra is Map) {
+              final v = extra['projectId'] ?? extra['id'];
+              if (v is int) projectId = v; else if (v is String) projectId = int.tryParse(v);
+            }
+            return NoviceServiceRequestsPage(projectId: projectId ?? 0);
           },
         ),
         GoRoute(

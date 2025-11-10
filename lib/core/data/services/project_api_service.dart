@@ -60,5 +60,23 @@ class ProjectApiService {
     if (data is Map<String, dynamic>) return data;
     return Map<String, dynamic>.from(data as Map);
   }
+
+  Future<List<Map<String, dynamic>>> getProjectDemandes({required int projectId}) async {
+    final res = await _dio.get('/projets/$projectId/demandes');
+    final data = res.data;
+    if (data == null) return const [];
+    if (data is List) {
+      return data
+          .map<Map<String, dynamic>>((e) => e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map))
+          .toList(growable: false);
+    }
+    if (data is Map && data['content'] is List) {
+      final list = data['content'] as List;
+      return list
+          .map<Map<String, dynamic>>((e) => e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map))
+          .toList(growable: false);
+    }
+    return const [];
+  }
 }
 
