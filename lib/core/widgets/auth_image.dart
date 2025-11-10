@@ -109,17 +109,17 @@ class _AuthImageState extends State<AuthImage> {
   }
 
   List<String> _buildCandidates(String u) {
-    final base = Uri.parse(ApiConfig.baseUrl);
+    final api = Uri.parse(ApiConfig.baseUrl);
     final List<String> urls = [];
-    final origin = '${base.scheme}://${base.host}${base.hasPort ? ':${base.port}' : ''}';
-    final basePath = base.path.isEmpty ? '' : (base.path.startsWith('/') ? base.path : '/${base.path}');
+    final origin = '${api.scheme}://${api.host}${api.hasPort ? ':${api.port}' : ''}';
+    final basePath = api.path.isEmpty ? '' : (api.path.startsWith('/') ? api.path : '/${api.path}');
     // Absolute URL
     if (u.startsWith('http://') || u.startsWith('https://')) {
       final abs = Uri.parse(u);
-      final absPath = abs.path; // keeps leading '/'
-      if (abs.scheme == base.scheme && abs.host == base.host && abs.port == base.port && absPath.startsWith('/uploads/')) {
-        final candidate = _join(origin, basePath, absPath);
-        urls.add(candidate);
+      final absPath = abs.path; // leading '/'
+      if (absPath.startsWith('/uploads/')) {
+        // Static files should not include API base path
+        urls.add('$origin$absPath');
       } else {
         urls.add(u);
       }
@@ -128,8 +128,11 @@ class _AuthImageState extends State<AuthImage> {
     // Relative path
     var rel = u;
     if (!rel.startsWith('/')) rel = '/$rel';
-    final candidate = _join(origin, basePath, rel);
-    urls.add(candidate);
+    if (rel.startsWith('/uploads/')) {
+      urls.add('$origin$rel');
+    } else {
+      urls.add(_join(origin, basePath, rel));
+    }
     return urls.toSet().toList();
   }
 
