@@ -1,7 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:myapp/core/data/services/pro_api_service.dart';
+import 'package:myapp/core/network/api_config.dart';
+import 'package:myapp/core/storage/token_storage.dart';
+import 'package:stomp_dart_client/stomp.dart';
+import 'package:stomp_dart_client/stomp_config.dart';
+import 'package:stomp_dart_client/stomp_frame.dart';
 
 /// Page de discussion (chat) côté Pro.
 ///
@@ -28,6 +34,7 @@ class _ProChatPageState extends State<ProChatPage> {
   /// Contrôleur du défilement de la liste des messages.
   final _scrollCtrl = ScrollController();
   final ProApiService _api = ProApiService();
+  StompClient? _stomp;
 
   /// Messages simulés (mock) de la conversation.
   List<_Msg> _messages = <_Msg>[
@@ -45,13 +52,92 @@ class _ProChatPageState extends State<ProChatPage> {
     if (widget.conversationId != null) {
       _messages = <_Msg>[];
       _fetchMessages();
+      _connectRealtime();
     }
+  }
+
+  void _connectRealtime() async {
+    try {
+      final origin = ApiConfig.baseOrigin; // ex: http://10.0.2.2:8080
+      final wsUrl = origin.replaceFirst('http', 'ws');
+      final token = await TokenStorage.instance.readToken().catchError((_) => null);
+      final headers = <String, String>{
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      };
+      _stomp = StompClient(
+        config: StompConfig.SockJS(
+          url: '$wsUrl/ws',
+          onConnect: _onStompConnect,
+          onWebSocketError: (e) {},
+          onStompError: (f) {},
+          onDisconnect: (f) {},
+          stompConnectHeaders: headers,
+          webSocketConnectHeaders: headers,
+          heartbeatIncoming: const Duration(seconds: 0),
+          heartbeatOutgoing: const Duration(seconds: 0),
+        ),
+      );
+      _stomp!.activate();
+    } catch (_) {}
+  }
+
+  void _onStompConnect(StompFrame f) {
+    final cid = widget.conversationId;
+    if (cid == null) return;
+    _stomp?.subscribe(
+      destination: '/topic/conversations/$cid',
+      callback: (frame) {
+        try {
+          final body = frame.body;
+          if (body == null || body.isEmpty) return;
+          final data = json.decode(body);
+          if (data is Map) {
+            _appendIncoming(data);
+          }
+        } catch (_) {}
+      },
+    );
+  }
+
+  void _appendIncoming(Map m) {
+    String content = (m['content'] ?? m['contenu'] ?? '').toString();
+    final attachment = (m['attachmentUrl'] ?? m['pieceJointe'] ?? '').toString();
+    if (content.isEmpty && attachment.isNotEmpty) {
+      final name = Uri.parse(attachment).pathSegments.isNotEmpty ? Uri.parse(attachment).pathSegments.last : 'Document';
+      content = '[Document] $name';
+    }
+    final senderRole = (m['senderRole'] ?? m['role'] ?? '').toString().toUpperCase();
+    final sentAtStr = (m['sentAt'] ?? m['dateEnvoi'] ?? '').toString();
+    DateTime dt;
+    try {
+      dt = sentAtStr.isNotEmpty ? DateTime.parse(sentAtStr).toLocal() : DateTime.now();
+    } catch (_) {
+      dt = DateTime.now();
+    }
+    final hh = dt.hour.toString().padLeft(2, '0');
+    final mm = dt.minute.toString().padLeft(2, '0');
+    final me = senderRole == 'PROFESSIONNEL';
+    if (!mounted) return;
+    setState(() {
+      _messages = List<_Msg>.from(_messages)..add(_Msg(text: content, me: me, time: '$hh:$mm'));
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollCtrl.hasClients) {
+        _scrollCtrl.animateTo(
+          _scrollCtrl.position.maxScrollExtent + 80,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
     _scrollCtrl.dispose();
+    _stomp?.deactivate();
     super.dispose();
   }
 
@@ -154,7 +240,12 @@ class _ProChatPageState extends State<ProChatPage> {
       // L'API renvoie les messages du plus récent au plus ancien; on les inverse pour l'affichage chronologique
       final items = data.reversed.map<_Msg>((e) {
         final m = e as Map;
-        final content = (m['content'] ?? m['contenu'] ?? '').toString();
+        String content = (m['content'] ?? m['contenu'] ?? '').toString();
+        final attachment = (m['attachmentUrl'] ?? m['pieceJointe'] ?? '').toString();
+        if (content.isEmpty && attachment.isNotEmpty) {
+          final name = Uri.parse(attachment).pathSegments.isNotEmpty ? Uri.parse(attachment).pathSegments.last : 'Document';
+          content = '[Document] $name';
+        }
         final senderRole = (m['senderRole'] ?? m['role'] ?? '').toString().toUpperCase();
         final sentAtStr = (m['sentAt'] ?? m['dateEnvoi'] ?? '').toString();
         DateTime dt;
