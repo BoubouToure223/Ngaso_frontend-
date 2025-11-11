@@ -3,8 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/core/data/services/project_api_service.dart';
 
 class NoviceStepsPage extends StatefulWidget {
-  const NoviceStepsPage({super.key, this.projectId});
-  final int? projectId; // TODO: brancher l'id réel via navigation
+  const NoviceStepsPage({super.key, required this.projectId});
+  final int projectId;
 
   @override
   State<NoviceStepsPage> createState() => _NoviceStepsPageState();
@@ -28,16 +28,36 @@ class _NoviceStepsPageState extends State<NoviceStepsPage> {
     });
     try {
       final api = ProjectApiService();
-      final pid = widget.projectId ?? 1; // fallback temporaire
+      final pid = widget.projectId;
       final list = await api.getProjectSteps(projectId: pid);
-      final mapped = list.map<_Step>((e) {
-        final ordre = _asInt(e['ordre']);
-        final estValider = _asBool(e['estValider']);
-        final nom = (e['modeleNom'] ?? '').toString();
-        final etapeId = _asInt(e['etapeId']);
+      // Normalize and sort by ordre
+      final normalized = list.map<Map<String, dynamic>>((e) => {
+            'ordre': _asInt(e['ordre']),
+            'estValider': _asBool(e['estValider']),
+            'modeleNom': (e['modeleNom'] ?? '').toString(),
+            'etapeId': _asInt(e['etapeId']),
+          }).toList(growable: false)
+        ..sort((a, b) => (a['ordre'] as int).compareTo(b['ordre'] as int));
+
+      // Find first non-validated step index
+      final firstPendingIdx = normalized.indexWhere((e) => e['estValider'] == false);
+
+      final mapped = normalized.map<_Step>((e) {
+        final ordre = e['ordre'] as int;
+        final estValider = e['estValider'] as bool;
+        final nom = e['modeleNom'] as String;
+        final etapeId = e['etapeId'] as int;
+        String subtitle;
+        if (estValider) {
+          subtitle = 'Terminé';
+        } else if (firstPendingIdx != -1 && normalized[firstPendingIdx]['ordre'] == ordre) {
+          subtitle = 'En cours';
+        } else {
+          subtitle = 'À venir';
+        }
         return _Step(
           title: nom.isNotEmpty ? nom : 'Étape ${ordre > 0 ? ordre : ''}'.trim(),
-          subtitle: estValider ? 'Terminé' : 'À venir',
+          subtitle: subtitle,
           ordre: ordre,
           imageAsset: _imageForOrdre(ordre),
           etapeId: etapeId,
@@ -256,7 +276,7 @@ class _StepCard extends StatelessWidget {
                 ),
                 onPressed: () {
                   final etapeId = data.etapeId;
-                  final pid = (context.findAncestorStateOfType<_NoviceStepsPageState>()?.widget.projectId) ?? 1;
+                  final pid = context.findAncestorStateOfType<_NoviceStepsPageState>()!.widget.projectId;
                   context.push('/Novice/step-details/$etapeId', extra: {'projectId': pid});
                 },
                 child: const Text('Voir détails'),

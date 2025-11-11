@@ -98,7 +98,7 @@ class NoviceStep4DetailPage extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: () => context.push('/Novice/experts'),
+                    onPressed: () => context.push('/Novice/experts', extra: {'etapeId': 4}),
                     child: const Text('Contacter un expert'),
                   ),
                 ),
