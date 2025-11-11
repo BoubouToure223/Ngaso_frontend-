@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:myapp/core/network/dio_client.dart';
 import 'package:myapp/core/network/api_config.dart';
@@ -41,6 +42,12 @@ class _AuthImageState extends State<AuthImage> {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb) {
+      // On web, use Image.network to avoid CORS issues with XHR (Dio)
+      final candidates = _buildCandidates(widget.url);
+      final first = candidates.isNotEmpty ? candidates.first : widget.url;
+      return Image.network(first, fit: widget.fit);
+    }
     if (_bytes != null) {
       return Image.memory(_bytes!, fit: widget.fit);
     }
@@ -117,22 +124,14 @@ class _AuthImageState extends State<AuthImage> {
     if (u.startsWith('http://') || u.startsWith('https://')) {
       final abs = Uri.parse(u);
       final absPath = abs.path; // leading '/'
-      if (absPath.startsWith('/uploads/')) {
-        // Static files should not include API base path
-        urls.add('$origin$absPath');
-      } else {
-        urls.add(u);
-      }
+      urls.add(u);
       return urls.toSet().toList();
     }
     // Relative path
     var rel = u;
     if (!rel.startsWith('/')) rel = '/$rel';
-    if (rel.startsWith('/uploads/')) {
-      urls.add('$origin$rel');
-    } else {
-      urls.add(_join(origin, basePath, rel));
-    }
+    // Always include basePath (context-path) for server resources
+    urls.add(_join(origin, basePath, rel));
     return urls.toSet().toList();
   }
 

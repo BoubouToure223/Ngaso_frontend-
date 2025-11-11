@@ -10,6 +10,22 @@ class NoviceServiceRequestsPage extends StatefulWidget {
 
   @override
   State<NoviceServiceRequestsPage> createState() => _NoviceServiceRequestsPageState();
+  String _extractErrMsg(Object e) {
+    try {
+      final resp = (e as dynamic).response;
+      final data = resp?.data;
+      if (data is Map) {
+        final m = data['message'];
+        if (m is String && m.trim().isNotEmpty) return m;
+        final err = data['error'];
+        if (err is String && err.trim().isNotEmpty) return err;
+      }
+      if (data is String && data.trim().isNotEmpty) return data;
+      final status = resp?.statusCode;
+      if (status != null) return 'Erreur ($status) lors de l\'annulation';
+    } catch (_) {}
+    return 'Une erreur est survenue lors de l\'annulation';
+  }
 }
 
 class _NoviceServiceRequestsPageState extends State<NoviceServiceRequestsPage> {
@@ -60,6 +76,10 @@ class _NoviceServiceRequestsPageState extends State<NoviceServiceRequestsPage> {
           .map<_ServiceRequest?>((raw) {
             try {
               final m = Map<String, dynamic>.from(raw as Map);
+              final idVal = m['id'] ?? m['demandeId'];
+              final demandeId = (idVal is int)
+                  ? idVal
+                  : (idVal is String ? int.tryParse(idVal) : null);
               final statutRaw = (m['statut'])?.toString() ?? '';
               final st = _mapBackendStatus(statutRaw);
               final proNom = (m['professionnelNom'])?.toString() ?? '';
@@ -75,6 +95,7 @@ class _NoviceServiceRequestsPageState extends State<NoviceServiceRequestsPage> {
                 createdAt = DateTime.tryParse(dateVal);
               }
               return _ServiceRequest(
+                id: (demandeId != null && demandeId > 0) ? demandeId : null,
                 name: fullName.isNotEmpty ? fullName : (entreprise.isNotEmpty ? entreprise : 'Professionnel inconnu'),
                 service: service.isNotEmpty ? service : 'Service',
                 status: st,
@@ -187,7 +208,10 @@ class _NoviceServiceRequestsPageState extends State<NoviceServiceRequestsPage> {
                             padding: const EdgeInsets.all(16),
                             itemCount: items.length,
                             separatorBuilder: (_, __) => const SizedBox(height: 12),
-                            itemBuilder: (context, i) => _RequestCard(data: items[i]),
+                            itemBuilder: (context, i) => _RequestCard(
+                              data: items[i],
+                              onCancelled: _load,
+                            ),
                           ))),
           ),
         ],
@@ -331,7 +355,8 @@ class _TabChip extends StatelessWidget {
 
 class _RequestCard extends StatelessWidget {
   final _ServiceRequest data;
-  const _RequestCard({required this.data});
+  final VoidCallback? onCancelled;
+  const _RequestCard({required this.data, this.onCancelled});
 
   @override
   Widget build(BuildContext context) {
@@ -400,11 +425,24 @@ class _RequestCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Demande annulée')),
-                  );
-                },
+                onPressed: data.id == null
+                    ? null
+                    : () async {
+                        try {
+                          await ProjectApiService().cancelDemande(demandeId: data.id!);
+                          if (onCancelled != null) onCancelled!();
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Demande annulée')),
+                          );
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          final msg = _extractErrMsg(e);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(msg)),
+                          );
+                        }
+                      },
                 child: const Text('Annuler'),
               ),
             ),
@@ -420,6 +458,23 @@ class _RequestCard extends StatelessWidget {
     final mm = d.month.toString().padLeft(2, '0');
     final yyyy = d.year.toString();
     return '$dd/$mm/$yyyy';
+  }
+
+  String _extractErrMsg(Object e) {
+    try {
+      final resp = (e as dynamic).response;
+      final data = resp?.data;
+      if (data is Map) {
+        final m = data['message'];
+        if (m is String && m.trim().isNotEmpty) return m;
+        final err = data['error'];
+        if (err is String && err.trim().isNotEmpty) return err;
+      }
+      if (data is String && data.trim().isNotEmpty) return data;
+      final status = resp?.statusCode;
+      if (status != null) return 'Erreur ($status) lors de l\'annulation';
+    } catch (_) {}
+    return 'Une erreur est survenue lors de l\'annulation';
   }
 }
 
@@ -466,9 +521,10 @@ class _StatusBadge extends StatelessWidget {
 enum _Status { pending, approved, rejected }
 
 class _ServiceRequest {
+  final int? id;
   final String name;
   final String service;
   final _Status status;
   final DateTime? createdAt;
-  const _ServiceRequest({required this.name, required this.service, required this.status, this.createdAt});
+  const _ServiceRequest({required this.id, required this.name, required this.service, required this.status, this.createdAt});
 }

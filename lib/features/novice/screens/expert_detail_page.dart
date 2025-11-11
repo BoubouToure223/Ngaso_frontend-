@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/core/data/services/pro_api_service.dart';
 import 'package:myapp/core/widgets/auth_image.dart';
+import 'package:myapp/core/network/api_config.dart';
 
 class NoviceExpertDetailPage extends StatefulWidget {
   const NoviceExpertDetailPage({super.key, this.professionnelId});
@@ -69,7 +70,23 @@ class _NoviceExpertDetailPageState extends State<NoviceExpertDetailPage> {
           final addr = (data['adresse'] ?? '').toString();
           final ent = (data['entreprise'] ?? '').toString();
           final desc = (data['description'] ?? '').toString();
-          final realisations = (data['realisations'] is List) ? List<String>.from((data['realisations'] as List).map((e) => e.toString())) : const <String>[];
+          final List<String> realisations = () {
+            final raw = data['realisations'];
+            final out = <String>[];
+            if (raw is List) {
+              for (final it in raw) {
+                if (it is String) {
+                  final u = _absUrl(it);
+                  if (u != null && u.isNotEmpty) out.add(u);
+                } else if (it is Map) {
+                  final s = (it['imageUrl'] ?? it['url'] ?? it['image'])?.toString();
+                  final u = _absUrl(s);
+                  if (u != null && u.isNotEmpty) out.add(u);
+                }
+              }
+            }
+            return out;
+          }();
 
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -159,6 +176,23 @@ class _NoviceExpertDetailPageState extends State<NoviceExpertDetailPage> {
         },
       ),
     );
+  }
+
+  String? _absUrl(String? u) {
+    if (u == null || u.isEmpty) return null;
+    if (u.startsWith('http://') || u.startsWith('https://')) return u;
+    final base = Uri.parse(ApiConfig.baseUrl);
+    final basePath = base.path; // e.g. /api/v1
+    var path = u;
+    // Ensure path starts with '/'
+    if (!path.startsWith('/')) path = '/$path';
+    // If the path wrongly includes the API base path, strip it
+    if (basePath.isNotEmpty && path.startsWith(basePath)) {
+      path = path.substring(basePath.length);
+      if (!path.startsWith('/')) path = '/$path';
+    }
+    // Return '/uploads/...' (or any absolute path). AuthImage will resolve to origin.
+    return path;
   }
 }
 
