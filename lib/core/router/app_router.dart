@@ -284,7 +284,16 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/Novice/steps',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceStepsPage();
+            int? projectId;
+            final extra = state.extra;
+            if (extra is Map && extra['projectId'] != null) {
+              final v = extra['projectId'];
+              if (v is int) projectId = v; else if (v is String) projectId = int.tryParse(v);
+            }
+            if (projectId == null || projectId == 0) {
+              return const NoviceMyProjectsPage();
+            }
+            return NoviceStepsPage(projectId: projectId);
           },
         ),
         GoRoute(
@@ -376,7 +385,19 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/Novice/experts',
           builder: (BuildContext context, GoRouterState state) {
-            return const NoviceExpertsPage();
+            int? etapeId;
+            String? etapeNom;
+            final extra = state.extra;
+            if (extra is Map) {
+              final v = extra['etapeId'];
+              if (v is int) etapeId = v; else if (v is String) etapeId = int.tryParse(v);
+              final n = extra['etapeNom'];
+              if (n is String) etapeNom = n;
+            }
+            if (etapeId == null || etapeId == 0) {
+              return const NoviceMyProjectsPage();
+            }
+            return NoviceExpertsPage(etapeId: etapeId!, etapeNom: etapeNom);
           },
         ),
         GoRoute(

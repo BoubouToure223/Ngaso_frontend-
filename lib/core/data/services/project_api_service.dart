@@ -55,7 +55,7 @@ class ProjectApiService {
   }
 
   Future<Map<String, dynamic>> validateEtape({required int etapeId}) async {
-    final res = await _dio.post('/etapes/$etapeId/valider');
+    final res = await _dio.post('/projets/etapes/$etapeId/valider');
     final data = res.data;
     if (data is Map<String, dynamic>) return data;
     return Map<String, dynamic>.from(data as Map);

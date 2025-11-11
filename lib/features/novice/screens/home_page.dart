@@ -4,9 +4,14 @@ import 'package:myapp/core/data/repositories/dashboard_repository.dart';
 import 'package:myapp/core/data/services/notification_api_service.dart';
 import 'package:myapp/core/data/models/dashboard_novice_response.dart';
 
-class NoviceHomePage extends StatelessWidget {
+class NoviceHomePage extends StatefulWidget {
   const NoviceHomePage({super.key});
 
+  @override
+  State<NoviceHomePage> createState() => _NoviceHomePageState();
+}
+
+class _NoviceHomePageState extends State<NoviceHomePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -312,9 +317,7 @@ class NoviceHomePage extends StatelessWidget {
                                       value: progress,
                                       minHeight: 8,
                                       backgroundColor: const Color(0xFFE9DFDC),
-                                      valueColor: const AlwaysStoppedAnimation(
-                                        Color(0xFF5A67D8),
-                                      ),
+                                      valueColor: const AlwaysStoppedAnimation(Color(0xFF5A67D8)),
                                     ),
                                   ),
                                   const SizedBox(height: 15),
@@ -324,16 +327,26 @@ class NoviceHomePage extends StatelessWidget {
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: const Color(0xFF3F51B5),
                                         foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 10,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                       ),
-                                      onPressed: () {
-                                        context.push('/Novice/steps');
+                                      onPressed: () async {
+                                        try {
+                                          final dash = await DashboardRepository().getNoviceDashboard();
+                                          final id = dash.lastProject?.id;
+                                          if (id != null && id != 0) {
+                                            // ignore: use_build_context_synchronously
+                                            await context.push('/Novice/steps', extra: {'projectId': id});
+                                          } else {
+                                            // ignore: use_build_context_synchronously
+                                            await context.push('/Novice/my-projects');
+                                          }
+                                        } catch (_) {
+                                          // ignore: use_build_context_synchronously
+                                          await context.push('/Novice/my-projects');
+                                        }
+                                        if (!mounted) return;
+                                        setState(() {});
                                       },
                                       child: const Text('Voir les étapes'),
                                     ),

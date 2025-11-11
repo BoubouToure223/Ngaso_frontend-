@@ -173,7 +173,7 @@ class _NoviceProjectDetailsPageState extends State<NoviceProjectDetailsPage> {
                 ),
               ),
               ElevatedButton(
-                onPressed: () => context.push('/Novice/steps'),
+                onPressed: () => context.push('/Novice/steps', extra: {'projectId': widget.projectId}),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF3F51B5),
                   foregroundColor: Colors.white,

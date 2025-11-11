@@ -108,6 +108,35 @@ class ProApiService {
     return Map<String, dynamic>.from(data as Map);
   }
 
+  Future<List<Map<String, dynamic>>> listProfessionnelsForEtape(int etapeId) async {
+    final res = await _dio.get('/projets/etapes/$etapeId/professionnels');
+    final data = res.data;
+    if (data is List) {
+      return List<Map<String, dynamic>>.from(
+        data.map((e) => e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map)),
+      );
+    }
+    return const <Map<String, dynamic>>[];
+  }
+
+  Future<int> createDemandeForEtape({
+    required int etapeId,
+    required int professionnelId,
+    required String message,
+  }) async {
+    final res = await _dio.post(
+      '/projets/etapes/$etapeId/demandes',
+      data: {
+        'professionnelId': professionnelId,
+        'message': message,
+      },
+    );
+    final data = res.data;
+    if (data is int) return data;
+    if (data is String) return int.tryParse(data) ?? 0;
+    return 0;
+  }
+
   Future<Map<String, dynamic>> submitPropositionMultipart({
     required int professionnelId,
     required int projetId,
