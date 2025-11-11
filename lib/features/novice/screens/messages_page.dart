@@ -1,33 +1,119 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/core/data/services/pro_api_service.dart';
 
-class NoviceMessagesPage extends StatelessWidget {
+class NoviceMessagesPage extends StatefulWidget {
   const NoviceMessagesPage({super.key});
+
+  @override
+  State<NoviceMessagesPage> createState() => _NoviceMessagesPageState();
+}
+
+class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  final ProApiService _api = ProApiService();
+  final List<_Conversation> _all = <_Conversation>[];
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchConversations();
+  }
+
+  Future<void> _fetchConversations() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final data = await _api.getMyConversations();
+      final items = data.map<_Conversation>((e) {
+        final m = e as Map;
+        final id = (m['id'] as num?)?.toInt() ?? 0;
+        final propositionId = (m['propositionId'] is num)
+            ? (m['propositionId'] as num).toInt()
+            : (m['propositionId'] is String ? int.tryParse(m['propositionId']) : null);
+        final last = (m['lastMessage'] as String?) ?? '';
+        final lastAtRaw = m['lastMessageAt'];
+        DateTime lastAt;
+        try {
+          if (lastAtRaw is String) {
+            lastAt = lastAtRaw.isNotEmpty ? DateTime.parse(lastAtRaw).toLocal() : DateTime.now();
+          } else if (lastAtRaw is int) {
+            lastAt = DateTime.fromMillisecondsSinceEpoch(lastAtRaw).toLocal();
+          } else {
+            lastAt = DateTime.now();
+          }
+        } catch (_) {
+          lastAt = DateTime.now();
+        }
+        final noviceNom = (m['noviceNom'] ?? m['nom'] ?? m['lastname'] ?? m['lastName'])?.toString();
+        final novicePrenom = (m['novicePrenom'] ?? m['prenom'] ?? m['firstname'] ?? m['firstName'])?.toString();
+        String displayName = '';
+        if (novicePrenom != null && novicePrenom.trim().isNotEmpty) displayName = novicePrenom.trim();
+        if (noviceNom != null && noviceNom.trim().isNotEmpty) {
+          displayName = displayName.isEmpty ? noviceNom.trim() : '$displayName ${noviceNom.trim()}';
+        }
+        if (displayName.isEmpty) displayName = (m['name'] as String?)?.toString() ?? '';
+        if (displayName.isEmpty) displayName = 'Conversation #$id';
+        final initials = _computeInitials(displayName);
+        final online = (m['active'] == true);
+        return _Conversation(
+          conversationId: id,
+          propositionId: propositionId,
+          initials: initials,
+          name: displayName,
+          last: last.isNotEmpty ? last : '—',
+          lastAt: lastAt,
+          online: online,
+        );
+      }).toList(growable: false);
+      setState(() {
+        _all
+          ..clear()
+          ..addAll(items);
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final messages = _mockConversations;
-
+    final filtered = _filter(_all, _searchCtrl.text)
+      ..sort((a, b) => b.lastAt.compareTo(a.lastAt));
     return Container(
       color: const Color(0xFFFCFAF7),
       child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
                 'Messages',
                 style: theme.textTheme.titleLarge?.copyWith(
                   color: const Color(0xFF1C120D),
                   fontWeight: FontWeight.w700,
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
+              const SizedBox(height: 8),
+              if (_loading) const LinearProgressIndicator(),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                ),
+              TextField(
+                controller: _searchCtrl,
+                onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: 'Rechercher une conversation...',
                   hintStyle: theme.textTheme.bodyMedium?.copyWith(
@@ -48,43 +134,60 @@ class NoviceMessagesPage extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: messages.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 4),
-                itemBuilder: (context, i) {
-                  final c = messages[i];
-                  return _ConversationTile(
-                    data: c,
-                    onTap: () {
-                      context.push(
-                        '/Novice/chat',
-                        extra: {
-                          'name': c.name,
-                          'initials': c.initials,
-                          'imageUrl': c.imageUrl,
-                          'online': c.online,
+              const SizedBox(height: 8),
+              if (!_loading && filtered.isEmpty)
+                const Expanded(
+                  child: Center(child: Text('Aucune conversation')),
+                )
+              else
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final c = filtered[index];
+                      return _ConversationTile(
+                        conv: c,
+                        onTap: () async {
+                          await context.push('/Novice/chat', extra: {
+                            'name': c.name,
+                            'initials': c.initials,
+                            'conversationId': c.conversationId,
+                            if (c.propositionId != null) 'propositionId': c.propositionId,
+                          });
+                          if (mounted) setState(() {});
                         },
                       );
                     },
-                  );
-                },
-              ),
-            ),
-          ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
+
+  List<_Conversation> _filter(List<_Conversation> all, String q) {
+    if (q.trim().isEmpty) return all;
+    final lq = q.toLowerCase();
+    return all
+        .where((c) => c.name.toLowerCase().contains(lq) || c.last.toLowerCase().contains(lq) || c.initials.toLowerCase().contains(lq))
+        .toList(growable: false);
+  }
+
+  String _computeInitials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+    if (parts.isEmpty) return '??';
+    if (parts.length == 1) return parts.first[0].toUpperCase();
+    return (parts.first[0] + parts.last[0]).toUpperCase();
+  }
 }
 
 class _ConversationTile extends StatelessWidget {
-  final _Conversation data;
+  const _ConversationTile({required this.conv, required this.onTap});
+  final _Conversation conv;
   final VoidCallback onTap;
-  const _ConversationTile({required this.data, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +198,11 @@ class _ConversationTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
           children: [
-            _Avatar(initials: data.initials, imageUrl: data.imageUrl),
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: const Color(0xFFDDE3F5),
+              child: Text(conv.initials, style: const TextStyle(fontWeight: FontWeight.w500, color: Color(0xFF3F51B5))),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -105,7 +212,7 @@ class _ConversationTile extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          data.name,
+                          conv.name,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: const Color(0xFF1C120D),
                             fontWeight: FontWeight.w700,
@@ -114,7 +221,7 @@ class _ConversationTile extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        data.timeLabel,
+                        _formatTime(conv.lastAt),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: const Color(0xFF6B4F4A),
                         ),
@@ -127,7 +234,7 @@ class _ConversationTile extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          data.preview,
+                          conv.last,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodyMedium?.copyWith(
@@ -136,8 +243,7 @@ class _ConversationTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      if (data.online)
-                        const Icon(Icons.circle, size: 10, color: Color(0xFF2DD44D)),
+                      if (conv.online) const Icon(Icons.circle, size: 10, color: Color(0xFF2DD44D)),
                     ],
                   ),
                 ],
@@ -148,6 +254,45 @@ class _ConversationTile extends StatelessWidget {
       ),
     );
   }
+
+  String _formatTime(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final date = DateTime(dt.year, dt.month, dt.day);
+    final diff = today.difference(date).inDays;
+    if (diff == 0) {
+      final hh = dt.hour.toString().padLeft(2, '0');
+      final mm = dt.minute.toString().padLeft(2, '0');
+      return '$hh:$mm';
+    }
+    if (diff == 1) return 'Hier';
+    if (diff < 7) {
+      const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+      return days[dt.weekday - 1];
+    }
+    final dd = dt.day.toString().padLeft(2, '0');
+    final mm = dt.month.toString().padLeft(2, '0');
+    return '$dd/$mm';
+  }
+}
+
+class _Conversation {
+  _Conversation({
+    required this.conversationId,
+    this.propositionId,
+    required this.initials,
+    required this.name,
+    required this.last,
+    required this.lastAt,
+    this.online = false,
+  });
+  final int conversationId;
+  final int? propositionId;
+  final String initials;
+  final String name;
+  final String last;
+  final DateTime lastAt;
+  final bool online;
 }
 
 class _Avatar extends StatelessWidget {
@@ -183,61 +328,3 @@ class _Avatar extends StatelessWidget {
     );
   }
 }
-
-class _Conversation {
-  final String name;
-  final String? initials;
-  final String? imageUrl;
-  final String preview;
-  final String timeLabel;
-  final bool online;
-  const _Conversation({
-    required this.name,
-    this.initials,
-    this.imageUrl,
-    required this.preview,
-    required this.timeLabel,
-    this.online = false,
-  });
-}
-
-final _mockConversations = <_Conversation>[
-  const _Conversation(
-    name: 'Amadou Bakayoko',
-    initials: 'AB',
-    preview: 'Je peux passer demain  pour voir',
-    timeLabel: '10:30',
-    online: true,
-  ),
-  const _Conversation(
-    name: 'Entreprise BTP Mali',
-    imageUrl: 'assets/images/onboarding_1.png',
-    preview: 'Nous avons reçu votre devis et n',
-    timeLabel: 'Hier',
-    online: true,
-  ),
-  const _Conversation(
-    name: 'Fatoumata Koné',
-    initials: 'FK',
-    preview: 'Merci pour votre disponibilité. À',
-    timeLabel: 'Hier',
-  ),
-  const _Conversation(
-    name: 'Mariam Diallo',
-    imageUrl: 'assets/images/onboarding_2.png',
-    preview: 'Je voudrais savoir si vous êtes di',
-    timeLabel: 'Lun',
-  ),
-  const _Conversation(
-    name: 'Société de Carrelage',
-    initials: 'SC',
-    preview: 'Nous avons bien reçu votre',
-    timeLabel: '23/05',
-  ),
-  const _Conversation(
-    name: 'Ibrahim Touré',
-    imageUrl: 'assets/images/onboarding_3.png',
-    preview: 'Est-ce que vous pourriez me don',
-    timeLabel: '20/05',
-  ),
-];
