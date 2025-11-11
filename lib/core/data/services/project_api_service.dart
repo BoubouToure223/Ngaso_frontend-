@@ -78,5 +78,9 @@ class ProjectApiService {
     }
     return const [];
   }
+
+  Future<void> cancelDemande({required int demandeId}) async {
+    await _dio.post('/projets/demandes/$demandeId/annuler');
+  }
 }
 
