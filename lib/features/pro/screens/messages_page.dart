@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/core/data/services/pro_api_service.dart';
+import 'package:myapp/core/network/api_config.dart';
+import 'package:myapp/core/storage/token_storage.dart';
+import 'package:stomp_dart_client/stomp.dart';
+import 'package:stomp_dart_client/stomp_config.dart';
+import 'package:stomp_dart_client/stomp_frame.dart';
 
 /// Page Pro: liste des conversations et accès à la messagerie.
 ///
@@ -22,11 +28,137 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
   final List<_Conversation> _all = <_Conversation>[];
   bool _loading = false;
   String? _error;
+  StompClient? _stomp;
+  final Set<int> _subscribedIds = <int>{};
 
   @override
   void initState() {
     super.initState();
     _fetchConversations();
+    _connectRealtime();
+  }
+
+  void _connectRealtime() async {
+    try {
+      final origin = ApiConfig.baseOrigin;
+      final wsUrl = origin.replaceFirst('http', 'ws');
+      final token = await TokenStorage.instance.readToken().catchError((_) => null);
+      final headers = <String, String>{
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      };
+      _stomp = StompClient(
+        config: StompConfig.SockJS(
+          url: '$wsUrl/ws',
+          onConnect: _onStompConnect,
+          onWebSocketError: (e) {},
+          onStompError: (f) {},
+          onDisconnect: (f) {},
+          stompConnectHeaders: headers,
+          webSocketConnectHeaders: headers,
+          heartbeatIncoming: const Duration(seconds: 0),
+          heartbeatOutgoing: const Duration(seconds: 0),
+        ),
+      );
+      _stomp!.activate();
+    } catch (_) {}
+  }
+
+  void _onStompConnect(StompFrame f) {
+    // Subscribe to each conversation topic individually
+    for (final c in _all) {
+      _subscribeConv(c.conversationId);
+    }
+  }
+
+  void _subscribeConv(int conversationId) {
+    if (_stomp == null || _subscribedIds.contains(conversationId)) return;
+    _subscribedIds.add(conversationId);
+    _stomp!.subscribe(
+      destination: '/topic/conversations/$conversationId',
+      callback: (frame) {
+        try {
+          final body = frame.body;
+          if (body == null || body.isEmpty) return;
+          final data = json.decode(body);
+          if (data is Map) {
+            // Some backends do not include conversationId in payload; derive from destination if needed
+            data.putIfAbsent('conversationId', () {
+              final dest = frame.headers['destination'] ?? '';
+              final idStr = dest.split('/').last;
+              final cid = int.tryParse(idStr);
+              return cid;
+            });
+            _applyConversationEvent(data);
+          }
+        } catch (_) {}
+      },
+    );
+  }
+
+  void _applyConversationEvent(Map m) {
+    final cid = (m['conversationId'] ?? m['id']) as int? ?? int.tryParse('${m['conversationId'] ?? m['id'] ?? ''}') ?? 0;
+    if (cid == 0) return;
+    String content = (m['content'] ?? m['contenu'] ?? '').toString();
+    String attachmentUrl = (m['attachmentUrl'] ?? m['pieceJointe'] ?? m['attachment'] ?? m['url'] ?? m['fileUrl'] ?? '').toString();
+    String fileName = (m['fileName'] ?? m['nomFichier'] ?? '').toString();
+    if (attachmentUrl.isEmpty && m['attachment'] is Map) {
+      final a = Map.from(m['attachment'] as Map);
+      attachmentUrl = (a['url'] ?? a['link'] ?? a['href'] ?? '').toString();
+      if (fileName.isEmpty) fileName = (a['name'] ?? a['fileName'] ?? a['nom'] ?? '').toString();
+    }
+    if (content.isEmpty && (attachmentUrl.isNotEmpty || fileName.isNotEmpty)) {
+      final name = fileName.isNotEmpty
+          ? fileName
+          : (Uri.tryParse(attachmentUrl)?.pathSegments.isNotEmpty == true
+              ? Uri.parse(attachmentUrl).pathSegments.last
+              : 'Document');
+      content = '[Document] $name';
+    }
+    final sentAtStr = (m['sentAt'] ?? m['dateEnvoi'] ?? '').toString();
+    DateTime dt;
+    try {
+      dt = sentAtStr.isNotEmpty ? DateTime.parse(sentAtStr).toLocal() : DateTime.now();
+    } catch (_) {
+      dt = DateTime.now();
+    }
+    if (!mounted) return;
+    setState(() {
+      final idx = _all.indexWhere((c) => c.conversationId == cid);
+      if (idx >= 0) {
+        final old = _all[idx];
+        _all[idx] = _Conversation(
+          conversationId: old.conversationId,
+          propositionId: old.propositionId,
+          initials: old.initials,
+          name: old.name,
+          last: content.isNotEmpty ? content : old.last,
+          lastAt: dt,
+          unread: old.unread,
+          online: old.online,
+        );
+      } else {
+        _all.add(_Conversation(
+          conversationId: cid,
+          propositionId: null,
+          initials: 'CN',
+          name: 'Conversation #$cid',
+          last: content.isNotEmpty ? content : '—',
+          lastAt: dt,
+          unread: 0,
+          online: false,
+        ));
+        // subscribe for newly observed conversation
+        _subscribeConv(cid);
+      }
+      _all.sort((a, b) => b.lastAt.compareTo(a.lastAt));
+    });
+  }
+
+  @override
+  void dispose() {
+    _stomp?.deactivate();
+    super.dispose();
   }
 
   Future<void> _fetchConversations() async {
@@ -209,7 +341,10 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
       'conversationId': conv.conversationId,
       if (conv.propositionId != null) 'propositionId': conv.propositionId,
     });
-    setState(() {});
+    // Recharger la liste pour afficher le dernier message immédiatement
+    if (mounted) {
+      await _fetchConversations();
+    }
   }
 }
 
