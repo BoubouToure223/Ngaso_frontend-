@@ -63,17 +63,59 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
         } catch (_) {
           lastAt = DateTime.now();
         }
-        final noviceNom = (m['noviceNom'] ?? m['nom'] ?? m['lastname'] ?? m['lastName'])?.toString();
-        final novicePrenom = (m['novicePrenom'] ?? m['prenom'] ?? m['firstname'] ?? m['firstName'])?.toString();
+        // Afficher le nom du contact (professionnel) et non celui du novice
         String displayName = '';
-        if (novicePrenom != null && novicePrenom.trim().isNotEmpty) displayName = novicePrenom.trim();
-        if (noviceNom != null && noviceNom.trim().isNotEmpty) {
-          displayName = displayName.isEmpty ? noviceNom.trim() : '$displayName ${noviceNom.trim()}';
+        // 1) Champs explicites du professionnel
+        String? proNom = (m['professionnelNom'] ?? m['proNom'] ?? m['professionnelLastName'] ?? m['proLastName'])?.toString();
+        String? proPrenom = (m['professionnelPrenom'] ?? m['proPrenom'] ?? m['professionnelFirstName'] ?? m['proFirstName'])?.toString();
+        // 2) Objet imbriqué professionnel/pro
+        final prof = m['professionnel'] ?? m['pro'] ?? m['Pro'];
+        if ((proNom == null || proNom.trim().isEmpty) || (proPrenom == null || proPrenom.trim().isEmpty)) {
+          if (prof is Map) {
+            proNom = (prof['nom'] ?? prof['lastName'] ?? prof['lastname'])?.toString() ?? proNom;
+            proPrenom = (prof['prenom'] ?? prof['firstName'] ?? prof['firstname'])?.toString() ?? proPrenom;
+          }
         }
-        if (displayName.isEmpty) displayName = (m['name'] as String?)?.toString() ?? '';
+        // 3) Rôles: destinataire/expediteur pouvant indiquer le pro
+        if ((proNom == null || proNom.trim().isEmpty) || (proPrenom == null || proPrenom.trim().isEmpty)) {
+          final destRole = (m['destinataireRole'] ?? m['recipientRole'] ?? '').toString().toUpperCase();
+          if (destRole == 'PROFESSIONNEL' || destRole == 'PRO') {
+            final dn = (m['destinataireNom'] ?? m['recipientLastName'] ?? m['recipientName'])?.toString();
+            final dp = (m['destinatairePrenom'] ?? m['recipientFirstName'])?.toString();
+            if ((dp ?? '').trim().isNotEmpty) proPrenom = dp;
+            if ((dn ?? '').trim().isNotEmpty) proNom = dn;
+          }
+          final expRole = (m['expediteurRole'] ?? m['senderRole'] ?? '').toString().toUpperCase();
+          if ((proNom == null || proNom.trim().isEmpty) || (proPrenom == null || proPrenom.trim().isEmpty)) {
+            if (expRole == 'PROFESSIONNEL' || expRole == 'PRO') {
+              final en = (m['expediteurNom'] ?? m['senderLastName'] ?? m['senderName'])?.toString();
+              final ep = (m['expediteurPrenom'] ?? m['senderFirstName'])?.toString();
+              if ((ep ?? '').trim().isNotEmpty) proPrenom = ep;
+              if ((en ?? '').trim().isNotEmpty) proNom = en;
+            }
+          }
+        }
+        if (proPrenom != null && proPrenom.trim().isNotEmpty) displayName = proPrenom.trim();
+        if (proNom != null && proNom.trim().isNotEmpty) {
+          displayName = displayName.isEmpty ? proNom.trim() : '$displayName ${proNom.trim()}';
+        }
+        // 4) Fallbacks génériques pour un nom de contact
+        if (displayName.isEmpty) {
+          final contactName = (m['contactName'] ?? m['interlocuteur'] ?? m['toName'] ?? m['with'] ?? m['name'])?.toString();
+          if (contactName != null && contactName.trim().isNotEmpty) displayName = contactName.trim();
+        }
         if (displayName.isEmpty) displayName = 'Conversation #$id';
         final initials = _computeInitials(displayName);
         final online = (m['active'] == true);
+        final unread = (m['unread'] is num)
+            ? (m['unread'] as num).toInt()
+            : (m['unreadCount'] is num)
+                ? (m['unreadCount'] as num).toInt()
+                : (m['nbNonLu'] is num)
+                    ? (m['nbNonLu'] as num).toInt()
+                    : (m['nonLu'] is num)
+                        ? (m['nonLu'] as num).toInt()
+                        : 0;
         return _Conversation(
           conversationId: id,
           propositionId: propositionId,
@@ -82,6 +124,7 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
           last: last.isNotEmpty ? last : '—',
           lastAt: lastAt,
           online: online,
+          unread: unread,
         );
       }).toList(growable: false);
       setState(() {
@@ -185,6 +228,7 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
           last: content.isNotEmpty ? content : old.last,
           lastAt: dt,
           online: old.online,
+          unread: old.unread,
         );
       } else {
         _all.add(_Conversation(
@@ -195,6 +239,7 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
           last: content.isNotEmpty ? content : '—',
           lastAt: dt,
           online: false,
+          unread: 0,
         ));
       }
       _all.sort((a, b) => b.lastAt.compareTo(a.lastAt));
@@ -206,6 +251,7 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
     final theme = Theme.of(context);
     final filtered = _filter(_all, _searchCtrl.text)
       ..sort((a, b) => b.lastAt.compareTo(a.lastAt));
+    final totalUnread = _all.fold<int>(0, (sum, c) => sum + (c.unread));
     return Container(
       color: const Color(0xFFFCFAF7),
       child: SafeArea(
@@ -214,12 +260,30 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Messages',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: const Color(0xFF1C120D),
-                  fontWeight: FontWeight.w700,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Messages',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: const Color(0xFF1C120D),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (totalUnread > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3F51B5),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        totalUnread > 99 ? '99+' : '$totalUnread',
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 8),
               if (_loading) const LinearProgressIndicator(),
@@ -266,6 +330,7 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
                       return _ConversationTile(
                         conv: c,
                         onTap: () async {
+                          setState(() => c.unread = 0);
                           await context.push('/Novice/chat', extra: {
                             'name': c.name,
                             'initials': c.initials,
@@ -360,6 +425,22 @@ class _ConversationTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
+                      if (conv.unread > 0)
+                        Container(
+                          height: 18,
+                          constraints: const BoxConstraints(minWidth: 18),
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3F51B5),
+                            borderRadius: BorderRadius.circular(9999),
+                          ),
+                          child: Text(
+                            conv.unread > 99 ? '99+' : '${conv.unread}',
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      const SizedBox(width: 6),
                       if (conv.online) const Icon(Icons.circle, size: 10, color: Color(0xFF2DD44D)),
                     ],
                   ),
@@ -402,6 +483,7 @@ class _Conversation {
     required this.last,
     required this.lastAt,
     this.online = false,
+    this.unread = 0,
   });
   final int conversationId;
   final int? propositionId;
@@ -410,6 +492,7 @@ class _Conversation {
   final String last;
   final DateTime lastAt;
   final bool online;
+  int unread;
 }
 
 class _Avatar extends StatelessWidget {

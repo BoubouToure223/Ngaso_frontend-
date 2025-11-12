@@ -82,7 +82,11 @@ class _NoviceHomePageState extends State<NoviceHomePage> {
                         clipBehavior: Clip.none,
                         children: [
                           IconButton(
-                            onPressed: () => context.push('/Novice/notifications'),
+                            onPressed: () async {
+                              await context.push('/Novice/notifications');
+                              if (!mounted) return;
+                              setState(() {});
+                            },
                             icon: const Icon(
                               Icons.notifications_none_rounded,
                               color: Color(0xFF1C120D),
