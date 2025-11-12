@@ -1,10 +1,17 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:myapp/core/data/services/pro_api_service.dart';
+import 'package:myapp/core/widgets/auth_image.dart';
 import 'package:myapp/core/network/api_config.dart';
 import 'package:myapp/core/storage/token_storage.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
@@ -24,6 +31,9 @@ class _NoviceChatPageState extends State<NoviceChatPage> {
   int? _conversationId;
   bool _initialized = false;
   StompClient? _stomp;
+  String? _pendingFilePath;
+  String? _pendingFileName;
+  final Set<String> _seenKeys = <String>{};
 
   @override
   void didChangeDependencies() {
@@ -40,6 +50,79 @@ class _NoviceChatPageState extends State<NoviceChatPage> {
       _messages = <_ChatMessage>[];
       _fetchMessages();
       _connectRealtime();
+    }
+  }
+
+  void _send() {
+    final txt = _controller.text.trim();
+    if (_pendingFilePath != null && _pendingFilePath!.isNotEmpty) {
+      _sendPendingAttachment();
+      return;
+    }
+    if (txt.isEmpty) return;
+    if (_conversationId != null) {
+      _sendViaApi(txt);
+    } else {
+      setState(() {
+        _messages.add(_ChatMessage(fromMe: true, text: txt, time: _nowLabel()));
+      });
+      _controller.clear();
+      _scrollToEnd();
+    }
+  }
+
+  Future<void> _sendPendingAttachment() async {
+    final path = _pendingFilePath;
+    final name = _pendingFileName ?? 'document';
+    if (path == null || path.isEmpty) return;
+    try {
+      if (_conversationId != null) {
+        final resp = await _api.sendConversationAttachment(
+          conversationId: _conversationId!,
+          filePath: path,
+          fileName: name,
+        );
+        if (!mounted) return;
+        // Construire un message local immédiat, et marquer la clé de déduplication
+        final content = (resp['content'] ?? resp['contenu'] ?? '').toString();
+        final sentAtStr = (resp['sentAt'] ?? resp['dateEnvoi'] ?? '').toString();
+        DateTime dt;
+        try {
+          dt = sentAtStr.isNotEmpty ? DateTime.parse(sentAtStr).toLocal() : DateTime.now();
+        } catch (_) {
+          dt = DateTime.now();
+        }
+        final hh = dt.hour.toString().padLeft(2, '0');
+        final mm = dt.minute.toString().padLeft(2, '0');
+        final text = content.isNotEmpty ? content : '[Document] $name';
+        final attUrl = (resp['attachmentUrl'] ?? resp['pieceJointe'] ?? resp['attachment'] ?? resp['url'] ?? resp['fileUrl'] ?? '').toString();
+        if (attUrl.isNotEmpty) {
+          final key = 'att:$attUrl';
+          _seenKeys.add(key);
+          setState(() {
+            _messages = List<_ChatMessage>.from(_messages)..add(_ChatMessage(text: text, fromMe: true, time: '$hh:$mm', attachmentUrl: attUrl));
+            _pendingFilePath = null;
+            _pendingFileName = null;
+          });
+          _scrollToEnd();
+        } else {
+          // Pas d'URL retournée: se contenter de nettoyer l'état, l'affichage viendra via STOMP
+          setState(() {
+            _pendingFilePath = null;
+            _pendingFileName = null;
+          });
+        }
+        return;
+      }
+      // Mode mock si pas de conversation
+      setState(() {
+        _messages = List<_ChatMessage>.from(_messages)..add(_ChatMessage(text: '[Document] $name', fromMe: true, time: _nowLabel()));
+        _pendingFilePath = null;
+        _pendingFileName = null;
+      });
+      _scrollToEnd();
+    } catch (_) {
+      // Garder la pièce jointe en attente en cas d'échec
     }
   }
 
@@ -129,26 +212,10 @@ class _NoviceChatPageState extends State<NoviceChatPage> {
           ),
           _Composer(
             controller: _controller,
+            pendingName: _pendingFileName,
+            onClearPending: () => setState(() { _pendingFilePath = null; _pendingFileName = null; }),
             onAttach: _attach,
-            onSend: () {
-              final txt = _controller.text.trim();
-              if (txt.isEmpty) return;
-              if (_conversationId != null) {
-                _sendViaApi(txt);
-              } else {
-                setState(() {
-                  _messages.add(_ChatMessage(fromMe: true, text: txt, time: _nowLabel()));
-                });
-                _controller.clear();
-                Future.delayed(const Duration(milliseconds: 100), () {
-                  _scroll.animateTo(
-                    _scroll.position.maxScrollExtent + 80,
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOut,
-                  );
-                });
-              }
-            },
+            onSend: _send,
           )
         ],
       ),
@@ -159,6 +226,25 @@ class _NoviceChatPageState extends State<NoviceChatPage> {
     final now = TimeOfDay.now();
     String two(int v) => v.toString().padLeft(2, '0');
     return '${two(now.hour)}:${two(now.minute)}';
+  }
+
+  void _scrollToEnd({double extra = 80, bool immediate = false}) {
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      final target = _scroll.position.maxScrollExtent + extra;
+      try {
+        if (immediate) {
+          _scroll.jumpTo(target);
+        } else {
+          _scroll.animateTo(
+            target,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+          );
+        }
+      } catch (_) {}
+    });
   }
 
   void _connectRealtime() async {
@@ -173,10 +259,24 @@ class _NoviceChatPageState extends State<NoviceChatPage> {
       _stomp = StompClient(
         config: StompConfig.SockJS(
           url: '$wsUrl/ws',
-          onConnect: _onStompConnect,
-          onWebSocketError: (e) {},
-          onStompError: (f) {},
-          onDisconnect: (f) {},
+          onConnect: (frame) {
+            // debug
+            // ignore: avoid_print
+            print('[STOMP] Connected: subscriptions for conversation $_conversationId');
+            _onStompConnect(frame);
+          },
+          onWebSocketError: (e) {
+            // ignore: avoid_print
+            print('[STOMP] WebSocket error: $e');
+          },
+          onStompError: (f) {
+            // ignore: avoid_print
+            print('[STOMP] STOMP error: ${f.body}');
+          },
+          onDisconnect: (f) {
+            // ignore: avoid_print
+            print('[STOMP] Disconnected');
+          },
           stompConnectHeaders: headers,
           webSocketConnectHeaders: headers,
           heartbeatIncoming: const Duration(seconds: 0),
@@ -196,6 +296,8 @@ class _NoviceChatPageState extends State<NoviceChatPage> {
         try {
           final body = frame.body;
           if (body == null || body.isEmpty) return;
+          // ignore: avoid_print
+          print('[STOMP] Frame received on /topic/conversations/$cid');
           final data = json.decode(body);
           if (data is Map) {
             _appendIncoming(data);
@@ -207,9 +309,19 @@ class _NoviceChatPageState extends State<NoviceChatPage> {
 
   void _appendIncoming(Map m) {
     String content = (m['content'] ?? m['contenu'] ?? '').toString();
-    final attachment = (m['attachmentUrl'] ?? m['pieceJointe'] ?? '').toString();
-    if (content.isEmpty && attachment.isNotEmpty) {
-      final name = Uri.parse(attachment).pathSegments.isNotEmpty ? Uri.parse(attachment).pathSegments.last : 'Document';
+    String attachmentUrl = (m['attachmentUrl'] ?? m['pieceJointe'] ?? m['attachment'] ?? m['url'] ?? m['fileUrl'] ?? '').toString();
+    String fileName = (m['fileName'] ?? m['nomFichier'] ?? '').toString();
+    if (attachmentUrl.isEmpty && m['attachment'] is Map) {
+      final a = Map.from(m['attachment'] as Map);
+      attachmentUrl = (a['url'] ?? a['link'] ?? a['href'] ?? '').toString();
+      if (fileName.isEmpty) fileName = (a['name'] ?? a['fileName'] ?? a['nom'] ?? '').toString();
+    }
+    if (content.isEmpty && (attachmentUrl.isNotEmpty || fileName.isNotEmpty)) {
+      final name = fileName.isNotEmpty
+          ? fileName
+          : (Uri.tryParse(attachmentUrl)?.pathSegments.isNotEmpty == true
+              ? Uri.parse(attachmentUrl).pathSegments.last
+              : 'Document');
       content = '[Document] $name';
     }
     final senderRole = (m['senderRole'] ?? m['role'] ?? '').toString().toUpperCase();
@@ -229,9 +341,14 @@ class _NoviceChatPageState extends State<NoviceChatPage> {
     final hh = dt.hour.toString().padLeft(2, '0');
     final mm = dt.minute.toString().padLeft(2, '0');
     final me = senderRole == 'NOVICE';
+    final dedupKey = attachmentUrl.isNotEmpty ? 'att:$attachmentUrl' : 'txt:$content@$hh:$mm';
+    if (_seenKeys.contains(dedupKey)) return;
+    _seenKeys.add(dedupKey);
     if (!mounted) return;
     setState(() {
-      _messages = List<_ChatMessage>.from(_messages)..add(_ChatMessage(text: content, fromMe: me, time: '$hh:$mm'));
+      _messages = List<_ChatMessage>.from(_messages)..add(
+        _ChatMessage(text: content, fromMe: me, time: '$hh:$mm', attachmentUrl: attachmentUrl.isEmpty ? null : attachmentUrl),
+      );
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
@@ -252,9 +369,19 @@ class _NoviceChatPageState extends State<NoviceChatPage> {
       final items = data.reversed.map<_ChatMessage>((e) {
         final m = e as Map;
         String content = (m['content'] ?? m['contenu'] ?? '').toString();
-        final attachment = (m['attachmentUrl'] ?? m['pieceJointe'] ?? '').toString();
-        if (content.isEmpty && attachment.isNotEmpty) {
-          final name = Uri.parse(attachment).pathSegments.isNotEmpty ? Uri.parse(attachment).pathSegments.last : 'Document';
+        String attachmentUrl = (m['attachmentUrl'] ?? m['pieceJointe'] ?? m['attachment'] ?? m['url'] ?? m['fileUrl'] ?? '').toString();
+        String fileName = (m['fileName'] ?? m['nomFichier'] ?? '').toString();
+        if (attachmentUrl.isEmpty && m['attachment'] is Map) {
+          final a = Map.from(m['attachment'] as Map);
+          attachmentUrl = (a['url'] ?? a['link'] ?? a['href'] ?? '').toString();
+          if (fileName.isEmpty) fileName = (a['name'] ?? a['fileName'] ?? a['nom'] ?? '').toString();
+        }
+        if (content.isEmpty && (attachmentUrl.isNotEmpty || fileName.isNotEmpty)) {
+          final name = fileName.isNotEmpty
+              ? fileName
+              : (Uri.tryParse(attachmentUrl)?.pathSegments.isNotEmpty == true
+                  ? Uri.parse(attachmentUrl).pathSegments.last
+                  : 'Document');
           content = '[Document] $name';
         }
         final senderRole = (m['senderRole'] ?? m['role'] ?? '').toString().toUpperCase();
@@ -274,17 +401,13 @@ class _NoviceChatPageState extends State<NoviceChatPage> {
         final hh = dt.hour.toString().padLeft(2, '0');
         final mm = dt.minute.toString().padLeft(2, '0');
         final me = senderRole == 'NOVICE';
-        return _ChatMessage(text: content, fromMe: me, time: '$hh:$mm');
+        return _ChatMessage(text: content, fromMe: me, time: '$hh:$mm', attachmentUrl: attachmentUrl.isEmpty ? null : attachmentUrl);
       }).toList();
       if (!mounted) return;
       setState(() {
         _messages = items;
       });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scroll.hasClients) {
-          _scroll.jumpTo(_scroll.position.maxScrollExtent);
-        }
-      });
+      _scrollToEnd(extra: 0, immediate: true);
     } catch (_) {
       // ignore for now
     }
@@ -336,58 +459,9 @@ class _NoviceChatPageState extends State<NoviceChatPage> {
       final res = await FilePicker.platform.pickFiles(allowMultiple: false);
       if (res == null || res.files.isEmpty) return;
       final file = res.files.first;
-      final name = file.name;
-      if (_conversationId != null && (file.path ?? '').isNotEmpty) {
-        try {
-          final resp = await _api.sendConversationAttachment(
-            conversationId: _conversationId!,
-            filePath: file.path!,
-            fileName: name,
-          );
-          final content = (resp['content'] ?? resp['contenu'] ?? '').toString();
-          final sentAtStr = (resp['sentAt'] ?? resp['dateEnvoi'] ?? '').toString();
-          DateTime dt;
-          try {
-            dt = sentAtStr.isNotEmpty ? DateTime.parse(sentAtStr).toLocal() : DateTime.now();
-          } catch (_) {
-            dt = DateTime.now();
-          }
-          final hh = dt.hour.toString().padLeft(2, '0');
-          final mm = dt.minute.toString().padLeft(2, '0');
-          final text = content.isNotEmpty ? content : '[Document] $name';
-          if (!mounted) return;
-          setState(() {
-            _messages = List<_ChatMessage>.from(_messages)..add(_ChatMessage(text: text, fromMe: true, time: '$hh:$mm'));
-          });
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_scroll.hasClients) {
-              _scroll.animateTo(
-                _scroll.position.maxScrollExtent + 80,
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeOut,
-              );
-            }
-          });
-          return;
-        } catch (_) {
-          // fallback local
-        }
-      }
-      final now = TimeOfDay.now();
-      final hh = now.hour.toString().padLeft(2, '0');
-      final mm = now.minute.toString().padLeft(2, '0');
-      if (!mounted) return;
       setState(() {
-        _messages = List<_ChatMessage>.from(_messages)..add(_ChatMessage(text: '[Document] $name', fromMe: true, time: '$hh:$mm'));
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scroll.hasClients) {
-          _scroll.animateTo(
-            _scroll.position.maxScrollExtent + 80,
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOut,
-          );
-        }
+        _pendingFilePath = file.path;
+        _pendingFileName = file.name;
       });
     } catch (_) {}
   }
@@ -445,12 +519,7 @@ class _Bubble extends StatelessWidget {
       child: Column(
         crossAxisAlignment: align,
         children: [
-          Container(
-            constraints: const BoxConstraints(maxWidth: 280),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(color: bg, borderRadius: radius),
-            child: Text(message.text, style: theme.textTheme.bodyMedium?.copyWith(color: fg)),
-          ),
+          _MessageBody(message: message, bg: bg, fg: fg, radius: radius),
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: message.fromMe ? MainAxisAlignment.end : MainAxisAlignment.start,
@@ -471,11 +540,168 @@ class _Bubble extends StatelessWidget {
   }
 }
 
+class _MessageBody extends StatelessWidget {
+  final _ChatMessage message;
+  final Color bg;
+  final Color fg;
+  final BorderRadius radius;
+  const _MessageBody({required this.message, required this.bg, required this.fg, required this.radius});
+
+  bool _isImageUrl(String url) {
+    final u = url.toLowerCase();
+    return u.endsWith('.png') || u.endsWith('.jpg') || u.endsWith('.jpeg') || u.endsWith('.gif') || u.endsWith('.webp');
+  }
+
+  bool _isDocUrl(String url) {
+    final u = url.toLowerCase();
+    return u.endsWith('.pdf') || u.endsWith('.doc') || u.endsWith('.docx') || u.endsWith('.xls') || u.endsWith('.xlsx') || u.endsWith('.ppt') || u.endsWith('.pptx') || u.endsWith('.txt');
+  }
+
+  String _fileNameFrom(String url, String fallback) {
+    final segs = Uri.tryParse(url)?.pathSegments;
+    if (segs != null && segs.isNotEmpty) return segs.last;
+    return fallback;
+  }
+
+  String _absUrl(String u) {
+    if (u.startsWith('http://') || u.startsWith('https://')) return u;
+    final api = Uri.parse(ApiConfig.baseUrl);
+    final origin = '${api.scheme}://${api.host}${api.hasPort ? ':${api.port}' : ''}';
+    final basePath = api.path.isEmpty ? '' : (api.path.startsWith('/') ? api.path : '/${api.path}');
+    final rel = u.startsWith('/') ? u : '/$u';
+    return '$origin$basePath$rel';
+  }
+
+  Future<void> _openAttachment(String url) async {
+    final target = Uri.parse(_absUrl(url));
+    await launchUrl(target, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _downloadAttachment(BuildContext context, String url) async {
+    if (kIsWeb) {
+      await launchUrl(Uri.parse(_absUrl(url)), mode: LaunchMode.externalApplication);
+      return;
+    }
+    final dio = Dio();
+    String? token;
+    try {
+      token = await TokenStorage.instance.readToken();
+    } catch (_) {}
+    final resolved = _absUrl(url);
+    final dir = await getApplicationDocumentsDirectory();
+    final name = _fileNameFrom(resolved, 'document');
+    final savePath = '${dir.path}${Platform.pathSeparator}$name';
+    await dio.download(
+      resolved,
+      savePath,
+      options: Options(headers: {
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+        'Accept': '*/*',
+      }),
+    );
+    await OpenFilex.open(savePath);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final att = message.attachmentUrl;
+    if (att != null && att.isNotEmpty && _isImageUrl(att)) {
+      return GestureDetector(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => _ImageViewerPage(url: att, heroTag: att),
+            ),
+          );
+        },
+        child: ClipRRect(
+          borderRadius: radius,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280, maxHeight: 220),
+            child: Hero(
+              tag: att,
+              child: AuthImage(url: att, fit: BoxFit.cover),
+            ),
+          ),
+        ),
+      );
+    }
+    if (att != null && att.isNotEmpty && _isDocUrl(att)) {
+      final name = _fileNameFrom(att, message.text);
+      return Container(
+        constraints: const BoxConstraints(maxWidth: 320),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(color: bg, borderRadius: radius),
+        child: InkWell(
+          onTap: () => message.fromMe ? _openAttachment(att) : _downloadAttachment(context, att),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(Icons.insert_drive_file, color: fg, size: 20),
+              const SizedBox(width: 8),
+              Expanded(child: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: fg))),
+              const SizedBox(width: 8),
+              if (!message.fromMe)
+                IconButton(
+                  icon: Icon(Icons.download, size: 20, color: fg),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => _downloadAttachment(context, att),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 280),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(color: bg, borderRadius: radius),
+      child: Text(message.text, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: fg)),
+    );
+  }
+}
+
+class _ImageViewerPage extends StatelessWidget {
+  const _ImageViewerPage({required this.url, required this.heroTag});
+  final String url;
+  final Object heroTag;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 4.0,
+          child: Hero(
+            tag: heroTag,
+            child: AuthImage(url: url, fit: BoxFit.contain),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Composer extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onAttach;
   final VoidCallback onSend;
-  const _Composer({required this.controller, required this.onAttach, required this.onSend});
+  final String? pendingName;
+  final VoidCallback? onClearPending;
+  const _Composer({required this.controller, required this.onAttach, required this.onSend, this.pendingName, this.onClearPending});
 
   @override
   Widget build(BuildContext context) {
@@ -500,12 +726,49 @@ class _Composer extends StatelessWidget {
                     BorderSide(color: Color(0xFFF2EAE8)),
                   ),
                 ),
-                child: TextField(
-                  controller: controller,
-                  decoration: const InputDecoration(
-                    hintText: 'Écrire un message...',
-                    border: InputBorder.none,
-                  ),
+                child: Row(
+                  children: [
+                    if (pendingName != null) ...[
+                      Flexible(
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 160),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFD1E3FF)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.insert_drive_file, size: 16, color: Color(0xFF3F51B5)),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(pendingName!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Color(0xFF1F2937))),
+                              ),
+                              const SizedBox(width: 6),
+                              if (onClearPending != null)
+                                GestureDetector(
+                                  onTap: onClearPending,
+                                  child: const Icon(Icons.close, size: 16, color: Color(0xFF6B7280)),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: TextField(
+                        controller: controller,
+                        decoration: const InputDecoration(
+                          hintText: 'Écrire un message...',
+                          border: InputBorder.none,
+                        ),
+                        onSubmitted: (_) => onSend(),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -525,5 +788,6 @@ class _ChatMessage {
   final String text;
   final String time;
   final bool seen;
-  const _ChatMessage({required this.fromMe, required this.text, required this.time, this.seen = false});
+  final String? attachmentUrl;
+  const _ChatMessage({required this.fromMe, required this.text, required this.time, this.seen = false, this.attachmentUrl});
 }
