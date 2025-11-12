@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
@@ -578,10 +577,6 @@ class _MessageBody extends StatelessWidget {
   }
 
   Future<void> _downloadAttachment(BuildContext context, String url) async {
-    if (kIsWeb) {
-      await launchUrl(Uri.parse(_absUrl(url)), mode: LaunchMode.externalApplication);
-      return;
-    }
     final dio = Dio();
     String? token;
     try {

@@ -394,8 +394,10 @@ class _NoviceHomePageState extends State<NoviceHomePage> {
                     _QuickCard(
                       icon: Icons.add,
                       title: 'Créer un projet de construction',
-                      onTap: () {
-                        context.push('/Novice/project-create');
+                      onTap: () async {
+                        await context.push('/Novice/project-create');
+                        if (!mounted) return;
+                        setState(() {});
                       },
                     ),
                     const SizedBox(height: 12),
