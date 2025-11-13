@@ -35,8 +35,10 @@ class _ProHomePageState extends State<ProHomePage> {
     if (u.startsWith('http://') || u.startsWith('https://')) return u;
     final base = Uri.parse(ApiConfig.baseUrl);
     final origin = '${base.scheme}://${base.host}${base.hasPort ? ':${base.port}' : ''}';
-    if (u.startsWith('/')) return '$origin$u';
-    return '$origin/$u';
+    final basePath = base.path.isEmpty ? '' : (base.path.startsWith('/') ? base.path : '/${base.path}');
+    // Ensure relative path starts with '/'
+    final rel = u.startsWith('/') ? u : '/$u';
+    return '$origin$basePath$rel';
   }
 
   @override
@@ -226,7 +228,7 @@ class _ProHomePageState extends State<ProHomePage> {
                   }
                   final data = snap.data;
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
