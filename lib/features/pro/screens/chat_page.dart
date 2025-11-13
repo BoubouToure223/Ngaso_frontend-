@@ -15,6 +15,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
+import 'package:myapp/core/state/badge_counters.dart';
 
 /// Page de discussion (chat) côté Pro.
 ///
@@ -330,6 +331,11 @@ class _ProChatPageState extends State<ProChatPage> {
           _scrollCtrl.jumpTo(_scrollCtrl.position.maxScrollExtent);
         }
       });
+      // Marquer comme lu et rafraîchir le badge global
+      try {
+        await _api.markConversationMessagesRead(conversationId: id);
+        await BadgeCounters.instance.refreshMessagesTotal();
+      } catch (_) {}
     } catch (_) {
       // Ignorer pour l'instant; on peut afficher un toast si souhaité
     }

@@ -208,12 +208,42 @@ class ProApiService {
     return const [];
   }
 
+  Future<int> getConversationsUnreadTotal() async {
+    final res = await _dio.get('/conversations/me/unread/total');
+    final data = res.data;
+    if (data is Map) {
+      final v = data['total'];
+      if (v is int) return v;
+      if (v is String) return int.tryParse(v) ?? 0;
+    }
+    if (data is int) return data;
+    if (data is String) return int.tryParse(data) ?? 0;
+    return 0;
+  }
+
+  Future<void> markConversationMessagesRead({required int conversationId}) async {
+    await _dio.post('/conversations/$conversationId/messages/read');
+  }
+
   Future<List<dynamic>> getMyNovicePropositions() async {
     final res = await _dio.get('/novices/me/propositions');
     final data = res.data;
     if (data is List) return data;
     if (data is Map && data['content'] is List) return List.from(data['content']);
     return const [];
+  }
+
+  Future<int> getNovicePropositionsUnansweredCount() async {
+    final res = await _dio.get('/novices/me/propositions/unanswered/count');
+    final data = res.data;
+    if (data is Map) {
+      final v = data['total'];
+      if (v is int) return v;
+      if (v is String) return int.tryParse(v) ?? 0;
+    }
+    if (data is int) return data;
+    if (data is String) return int.tryParse(data) ?? 0;
+    return 0;
   }
 
   Future<Map<String, dynamic>> acceptMyNoviceProposition(int propositionId) async {
