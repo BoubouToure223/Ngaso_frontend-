@@ -115,7 +115,38 @@ class _ProHomePageState extends State<ProHomePage> {
                       ),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(Icons.notifications_none),
+                        icon: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Icon(Icons.notifications_none),
+                            Positioned(
+                              right: -2,
+                              top: -2,
+                              child: FutureBuilder<int>(
+                                future: ProApiService().getMyNotificationsCount(),
+                                builder: (context, snapshot) {
+                                  final v = snapshot.data ?? 0;
+                                  if (v <= 0) return const SizedBox.shrink();
+                                  final label = v > 99 ? '99+' : '$v';
+                                  return Container(
+                                    height: 16,
+                                    constraints: const BoxConstraints(minWidth: 16),
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE53935),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      label,
+                                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
                         color: const Color(0xFF1C120D),
                         onPressed: () {
                           context.go('/pro/notifications');

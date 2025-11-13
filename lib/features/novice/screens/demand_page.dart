@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/core/data/services/pro_api_service.dart';
 import 'package:myapp/core/network/api_config.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import 'package:myapp/core/state/badge_counters.dart';
 
 class DemandPage extends StatefulWidget {
   const DemandPage({super.key});
@@ -149,6 +150,8 @@ class _DemandPageState extends State<DemandPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Proposition acceptée: ${d.proName}')),
                     );
+                    // Refresh demandes badge counter
+                    await BadgeCounters.instance.refreshDemandesTotal();
                     setState(() => _future = _fetch());
                   } catch (e) {
                     if (!mounted) return;
@@ -162,6 +165,8 @@ class _DemandPageState extends State<DemandPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Proposition refusée: ${d.proName}')),
                     );
+                    // Refresh demandes badge counter
+                    await BadgeCounters.instance.refreshDemandesTotal();
                     setState(() => _future = _fetch());
                   } catch (e) {
                     if (!mounted) return;

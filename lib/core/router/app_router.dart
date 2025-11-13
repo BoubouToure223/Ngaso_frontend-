@@ -37,6 +37,9 @@ import 'package:myapp/features/novice/screens/experts_page.dart';
 import 'package:myapp/features/novice/screens/expert_detail_page.dart';
 import 'package:myapp/features/novice/screens/service_requests_page.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:myapp/core/data/services/pro_api_service.dart';
+import 'package:flutter/foundation.dart';
+import 'package:myapp/core/state/badge_counters.dart';
 
 // Fonction utilitaire pour le SVG (avec placeholder discret)
 Widget createSvgIcon(String assetPath) {
@@ -110,11 +113,46 @@ final GoRouter router = GoRouter(
     // Espace Professionnels avec barre de navigation persistante (AppShell paramétré).
     ShellRoute(
       builder: (BuildContext context, GoRouterState state, Widget child) {
-        const proTabs = [
-          NavTab('/pro/home', 'Accueil', Icon(Icons.home_outlined)),
-          NavTab('/pro/messages', 'Messages', Icon(Icons.chat_bubble_outline)),
-          NavTab('/pro/projet', 'Projet', Icon(Icons.topic_outlined)),
-          NavTab('/pro/profil', 'Profile', Icon(Icons.person_outline)),
+        Widget withUnreadBadgePro(Widget base) {
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              base,
+              Positioned(
+                right: -6,
+                top: -6,
+                child: FutureBuilder<int>(
+                  future: ProApiService().getConversationsUnreadTotal(),
+                  builder: (context, snapshot) {
+                    final v = snapshot.data ?? 0;
+                    if (v <= 0) return const SizedBox.shrink();
+                    final label = v > 99 ? '99+' : '$v';
+                    return Container(
+                      height: 16,
+                      constraints: const BoxConstraints(minWidth: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE53935),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        label,
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        }
+
+        final proTabs = [
+          const NavTab('/pro/home', 'Accueil', Icon(Icons.home_outlined)),
+          NavTab('/pro/messages', 'Messages', withUnreadBadgePro(const Icon(Icons.chat_bubble_outline))),
+          const NavTab('/pro/projet', 'Projet', Icon(Icons.topic_outlined)),
+          const NavTab('/pro/profil', 'Profile', Icon(Icons.person_outline)),
         ];
         return AppShell(tabs: proTabs, child: child);
       },
@@ -224,10 +262,78 @@ final GoRouter router = GoRouter(
     // Espace Novice avec barre de navigation persistante (AppShell paramétré).
     ShellRoute(
       builder: (BuildContext context, GoRouterState state, Widget child) {
+        Widget withUnreadBadge(Widget base) {
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              base,
+              Positioned(
+                right: -6,
+                top: -6,
+                child: ValueListenableBuilder<int>(
+                  valueListenable: BadgeCounters.instance.messagesTotal,
+                  builder: (context, v, _) {
+                    if (v <= 0) return const SizedBox.shrink();
+                    final label = v > 99 ? '99+' : '$v';
+                    return Container(
+                      height: 16,
+                      constraints: const BoxConstraints(minWidth: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE53935),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        label,
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        }
+
+        Widget withDemandesBadge(Widget base) {
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              base,
+              Positioned(
+                right: -6,
+                top: -6,
+                child: ValueListenableBuilder<int>(
+                  valueListenable: BadgeCounters.instance.demandesTotal,
+                  builder: (context, v, _) {
+                    if (v <= 0) return const SizedBox.shrink();
+                    final label = v > 99 ? '99+' : '$v';
+                    return Container(
+                      height: 16,
+                      constraints: const BoxConstraints(minWidth: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE53935),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        label,
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        }
+
         final noviceTabs = [
           NavTab('/Novice/home', 'Accueil', createSvgIcon('assets/icons/home_icon.svg')),
-          NavTab('/Novice/messages', 'Messages', createSvgIcon('assets/icons/message_icon.svg')),
-          NavTab('/Novice/demand', 'Demandes', createSvgIcon('assets/icons/demande_icon.svg')),
+          NavTab('/Novice/messages', 'Messages', withUnreadBadge(createSvgIcon('assets/icons/message_icon.svg'))),
+          NavTab('/Novice/demand', 'Demandes', withDemandesBadge(createSvgIcon('assets/icons/demande_icon.svg'))),
           NavTab('/Novice/profil', 'Profile', createSvgIcon('assets/icons/profile_icon.svg')),
         ];
         return AppShell(tabs: noviceTabs, child: child);

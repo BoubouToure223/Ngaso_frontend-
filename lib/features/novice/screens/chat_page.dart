@@ -14,6 +14,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
+import 'package:myapp/core/state/badge_counters.dart';
 
 class NoviceChatPage extends StatefulWidget {
   const NoviceChatPage({super.key});
@@ -407,6 +408,11 @@ class _NoviceChatPageState extends State<NoviceChatPage> {
         _messages = items;
       });
       _scrollToEnd(extra: 0, immediate: true);
+      // Mark all messages as read on open and refresh global badges
+      try {
+        await _api.markConversationMessagesRead(conversationId: id);
+        await BadgeCounters.instance.refreshMessagesTotal();
+      } catch (_) {}
     } catch (_) {
       // ignore for now
     }

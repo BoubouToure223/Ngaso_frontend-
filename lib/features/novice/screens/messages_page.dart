@@ -7,6 +7,7 @@ import 'package:myapp/core/storage/token_storage.dart';
 import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
+import 'package:myapp/core/state/badge_counters.dart';
 
 class NoviceMessagesPage extends StatefulWidget {
   const NoviceMessagesPage({super.key});
@@ -22,12 +23,16 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
   bool _loading = false;
   String? _error;
   StompClient? _stomp;
+  int _totalUnread = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchConversations();
     _connectRealtime();
+    _refreshUnreadTotal();
+    // Also refresh global badge counter for messages on first open
+    BadgeCounters.instance.refreshMessagesTotal();
   }
 
   @override
@@ -132,6 +137,7 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
           ..clear()
           ..addAll(items);
       });
+      await _refreshUnreadTotal();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -139,6 +145,16 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _refreshUnreadTotal() async {
+    try {
+      final t = await _api.getConversationsUnreadTotal();
+      if (!mounted) return;
+      setState(() {
+        _totalUnread = t;
+      });
+    } catch (_) {}
   }
 
   void _connectRealtime() async {
@@ -251,7 +267,6 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
     final theme = Theme.of(context);
     final filtered = _filter(_all, _searchCtrl.text)
       ..sort((a, b) => b.lastAt.compareTo(a.lastAt));
-    final totalUnread = _all.fold<int>(0, (sum, c) => sum + (c.unread));
     return Container(
       color: const Color(0xFFFCFAF7),
       child: SafeArea(
@@ -271,7 +286,7 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
                       ),
                     ),
                   ),
-                  if (totalUnread > 0)
+                  if (_totalUnread > 0)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
@@ -279,7 +294,7 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        totalUnread > 99 ? '99+' : '$totalUnread',
+                        _totalUnread > 99 ? '99+' : '$_totalUnread',
                         style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
                       ),
                     ),
@@ -337,7 +352,10 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
                             'conversationId': c.conversationId,
                             if (c.propositionId != null) 'propositionId': c.propositionId,
                           });
-                          if (mounted) await _fetchConversations();
+                          if (mounted) {
+                            await _fetchConversations();
+                            await _refreshUnreadTotal();
+                          }
                         },
                       );
                     },

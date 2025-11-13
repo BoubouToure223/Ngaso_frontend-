@@ -192,7 +192,9 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
         if (displayName.isEmpty) displayName = (m['name'] as String?)?.toString() ?? '';
         if (displayName.isEmpty) displayName = 'Conversation #$id';
         final initials = _computeInitials(displayName);
-        final unread = 0;
+        final unread = (m['unreadCount'] is num)
+            ? (m['unreadCount'] as num).toInt()
+            : ((m['unread'] == true) ? 1 : 0);
         final online = (m['active'] == true);
         return _Conversation(
           conversationId: id,
@@ -408,7 +410,10 @@ class _ConversationTile extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(color: const Color(0xFF3F51B5), borderRadius: BorderRadius.circular(9999)),
-                          child: Text('${conv.unread}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+                          child: Text(
+                            conv.unread > 99 ? '99+' : '${conv.unread}',
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                          ),
                         ),
                     ],
                   ),

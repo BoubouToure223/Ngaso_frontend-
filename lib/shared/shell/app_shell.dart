@@ -52,10 +52,15 @@ class AppShell extends StatelessWidget {
                           ? const Color(0xFF1C120D)
                           : const Color(0xFF99604C);
 
-                      final Widget coloredIcon = ColorFiltered(
-                        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-                        child: t.iconWidget,
-                      );
+                      // If iconWidget is a Stack (e.g., base icon with a badge),
+                      // avoid applying a global ColorFiltered that would also tint the badge.
+                      // Otherwise, colorize the icon widget.
+                      final Widget coloredIcon = (t.iconWidget is Stack)
+                          ? t.iconWidget
+                          : ColorFiltered(
+                              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+                              child: t.iconWidget,
+                            );
 
                       return BottomNavigationBarItem(
                         icon: coloredIcon,
