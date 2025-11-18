@@ -37,8 +37,9 @@ class AppShell extends StatelessWidget {
                 currentIndex: current,
                 type: BottomNavigationBarType.fixed,
                 backgroundColor: const Color(0xFFFCFAF7),
-                selectedItemColor: const Color(0xFF1C120D),
-                unselectedItemColor: const Color(0xFF99604C),
+                // Couleurs mises à jour : onglet actif marron 0xFF99614D, inactifs noirs
+                selectedItemColor: const Color(0xFF99614D),
+                unselectedItemColor: Colors.black,
                 showUnselectedLabels: true,
                 onTap: (i) => context.go(tabs[i].path),
                 items: tabs
@@ -48,19 +49,17 @@ class AppShell extends StatelessWidget {
                       final int index = entry.key;
                       final NavTab t = entry.value;
                       final bool isSelected = index == current;
+                      // Même logique de couleur pour les icônes : actif 0xFF99614D, inactif noir
                       final Color color = isSelected
-                          ? const Color(0xFF1C120D)
-                          : const Color(0xFF99604C);
+                          ? const Color(0xFF99614D)
+                          : Colors.black;
 
-                      // If iconWidget is a Stack (e.g., base icon with a badge),
-                      // avoid applying a global ColorFiltered that would also tint the badge.
-                      // Otherwise, colorize the icon widget.
-                      final Widget coloredIcon = (t.iconWidget is Stack)
-                          ? t.iconWidget
-                          : ColorFiltered(
-                              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-                              child: t.iconWidget,
-                            );
+                      // Applique toujours la couleur sur l'icône (même si c'est un Stack).
+                      // Cela permet de colorer aussi les icônes Novice (Messages / Demandes).
+                      final Widget coloredIcon = ColorFiltered(
+                        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+                        child: t.iconWidget,
+                      );
 
                       return BottomNavigationBarItem(
                         icon: coloredIcon,

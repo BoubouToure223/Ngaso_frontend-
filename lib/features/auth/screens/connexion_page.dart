@@ -38,17 +38,6 @@ class _ConnexionPageState extends State<ConnexionPage> {
           children: [
             // Espacement supérieur pour simuler une barre d'état.
             const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                // Bouton de retour pour naviguer vers la page précédente.
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => context.pop(),
-                ),
-              ),
-            ),
             Expanded(
               child: Center(
                 child: SingleChildScrollView(

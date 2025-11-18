@@ -28,9 +28,9 @@ class NoviceBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Les couleurs des icônes et du texte sont basées sur le Figma
-    const Color selectedColor = Colors.black; // Couleur foncée pour l'actif
-    const Color unselectedColor = Color(0xFFC0A794); // Couleur beige/marron clair pour l'inactif
+    // Les couleurs des icônes et du texte : actif 0xFF99614D, inactif noir
+    const Color selectedColor = Color(0xFF99614D);
+    const Color unselectedColor = Colors.black;
     
     // La couleur de fond de la barre (similaire au Figma)
     const Color backgroundColor = Color(0xFFF7F3EF); 
