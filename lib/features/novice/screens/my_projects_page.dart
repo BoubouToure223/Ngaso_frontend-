@@ -25,6 +25,22 @@ class _NoviceMyProjectsPageState extends State<NoviceMyProjectsPage> {
     try {
       final repo = ProjectRepository();
       final list = await repo.listMyProjects();
+      list.sort((a, b) {
+        DateTime parse(dynamic v) {
+          if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);
+          final s = v.toString();
+          try {
+            return DateTime.parse(s).toLocal();
+          } catch (_) {
+            return DateTime.fromMillisecondsSinceEpoch(0);
+          }
+        }
+
+        final da = parse(a['dateCreation']);
+        final db = parse(b['dateCreation']);
+        return db.compareTo(da);
+      });
+
       final mapped = list.map<_Project>((m) => _Project(
         id: _toInt(m['id']) ?? 0,
         title: (m['titre'] ?? '').toString(),
@@ -106,7 +122,10 @@ class _NoviceMyProjectsPageState extends State<NoviceMyProjectsPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: _items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 16),
-      itemBuilder: (context, i) => _ProjectTile(data: _items[i]),
+      itemBuilder: (context, i) => _ProjectTile(
+        data: _items[i],
+        onChanged: _load,
+      ),
     );
   }
 
@@ -142,7 +161,8 @@ class _NoviceMyProjectsPageState extends State<NoviceMyProjectsPage> {
 
 class _ProjectTile extends StatelessWidget {
   final _Project data;
-  const _ProjectTile({required this.data});
+  final Future<void> Function() onChanged;
+  const _ProjectTile({required this.data, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -183,8 +203,11 @@ class _ProjectTile extends StatelessWidget {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                         ),
-                        onPressed: () {
-                          context.push('/Novice/project-details', extra: {'projectId': data.id});
+                        onPressed: () async {
+                          final res = await context.push('/Novice/project-details', extra: {'projectId': data.id});
+                          if (res == true) {
+                            await onChanged();
+                          }
                         },
                         icon: const Icon(Icons.arrow_forward),
                         label: const Text('Voir détails'),
