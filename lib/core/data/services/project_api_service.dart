@@ -82,5 +82,8 @@ class ProjectApiService {
   Future<void> cancelDemande({required int demandeId}) async {
     await _dio.post('/projets/demandes/$demandeId/annuler');
   }
+  Future<void> deleteMyProject({required int projectId}) async {
+    await _dio.delete('/projets/$projectId');
+  }
 }
 
