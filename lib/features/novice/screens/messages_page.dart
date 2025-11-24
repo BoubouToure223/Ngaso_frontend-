@@ -48,6 +48,7 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
     });
     try {
       final data = await _api.getMyConversations();
+      if (!mounted) return;
       final items = data.map<_Conversation>((e) {
         final m = e as Map;
         final id = (m['id'] as num?)?.toInt() ?? 0;
@@ -132,6 +133,7 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
           unread: unread,
         );
       }).toList(growable: false);
+      if (!mounted) return;
       setState(() {
         _all
           ..clear()
@@ -139,6 +141,7 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
       });
       await _refreshUnreadTotal();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
       });
