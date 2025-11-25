@@ -30,12 +30,14 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
   String? _error;
   StompClient? _stomp;
   final Set<int> _subscribedIds = <int>{};
+  int _totalUnread = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchConversations();
     _connectRealtime();
+    _refreshUnreadTotal();
   }
 
   void _connectRealtime() async {
@@ -69,6 +71,16 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
     for (final c in _all) {
       _subscribeConv(c.conversationId);
     }
+  }
+
+  Future<void> _refreshUnreadTotal() async {
+    try {
+      final t = await _api.getConversationsUnreadTotal();
+      if (!mounted) return;
+      setState(() {
+        _totalUnread = t;
+      });
+    } catch (_) {}
   }
 
   void _subscribeConv(int conversationId) {
@@ -221,6 +233,7 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
           ..clear()
           ..addAll(items);
       });
+      await _refreshUnreadTotal();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -235,74 +248,95 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
     final theme = Theme.of(context);
     final filtered = _filter(_all, _searchCtrl.text)
       ..sort((a, b) => b.lastAt.compareTo(a.lastAt));
-    return Scaffold(
-      backgroundColor: const Color(0xFFFCFAF7),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/pro/home'),
-        ),
-        title: const Text('Messages 💬'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-        child: Column(
-          children: [
-            if (_loading) const LinearProgressIndicator(),
-            if (_error != null) Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(_error!, style: const TextStyle(color: Colors.red)),
-            ),
-            // Barre de recherche
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchCtrl,
-                    onChanged: (_) => setState(() {}),
-                    decoration: InputDecoration(
-                      hintText: 'Rechercher une conversation...',
-                      prefixIcon: const Icon(Icons.search, size: 20),
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                      filled: true,
-                      fillColor: const Color(0xFFF3F4F6),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+    return Container(
+      color: const Color(0xFFFCFAF7),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Messages',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: const Color(0xFF1C120D),
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
+                  if (_totalUnread > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3F51B5),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        _totalUnread > 99 ? '99+' : '$_totalUnread',
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (_loading) const LinearProgressIndicator(),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(_error!, style: const TextStyle(color: Colors.red)),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (!_loading && filtered.isEmpty)
-              // État vide (aucune conversation)
-              const Expanded(
-                child: _EmptyState(
-                  emoji: '💬',
-                  title: 'Aucune conversation',
-                  subtitle: 'Vous n\'avez pas encore de messages.',
-                ),
-              )
-            else
-              // Liste des conversations
-              Expanded(
-                child: ListView.separated(
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final conv = filtered[index];
-                    return _ConversationTile(
-                      conv: conv,
-                      formatTime: _formatTime,
-                      onTap: () => _openConversation(conv),
-                    );
-                  },
+              TextField(
+                controller: _searchCtrl,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Rechercher une conversation...',
+                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF99604C),
+                    fontWeight: FontWeight.w400,
+                  ),
+                  prefixIcon: const Icon(Icons.search, color: Color(0xFF99604C)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFF2EAE8)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE5DBD7)),
+                  ),
                 ),
               ),
-          ],
+              const SizedBox(height: 8),
+              if (!_loading && filtered.isEmpty)
+                const Expanded(
+                  child: _EmptyState(
+                    emoji: '💬',
+                    title: 'Aucune conversation',
+                    subtitle: 'Vous n\'avez pas encore de messages.',
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final conv = filtered[index];
+                      return _ConversationTile(
+                        conv: conv,
+                        formatTime: _formatTime,
+                        onTap: () => _openConversation(conv),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -355,6 +389,7 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
     // Recharger la liste pour afficher le dernier message immédiatement
     if (mounted) {
       await _fetchConversations();
+      await _refreshUnreadTotal();
     }
   }
 }
