@@ -115,6 +115,11 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
               : 'Document');
       content = '[Document] $name';
     }
+    // Si le backend renvoie '_' comme contenu pour une pièce jointe, afficher un libellé plus explicite.
+    final trimmed = content.trim();
+    if (trimmed == '_') {
+      content = '[Pièce jointe]';
+    }
     final sentAtStr = (m['sentAt'] ?? m['dateEnvoi'] ?? '').toString();
     DateTime dt;
     try {
@@ -174,7 +179,11 @@ class _ProMessagesPageState extends State<ProMessagesPage> {
         final propositionId = (m['propositionId'] is num)
             ? (m['propositionId'] as num).toInt()
             : (m['propositionId'] is String ? int.tryParse(m['propositionId']) : null);
-        final last = (m['lastMessage'] as String?) ?? '';
+        final rawLast = (m['lastMessage'] as String?) ?? '';
+        final trimmed = rawLast.trim();
+        // Si le backend renvoie '_' pour une pièce jointe, on affiche un libellé.
+        // Si c'est vraiment vide, on laisse vide pour ne rien afficher.
+        final last = trimmed == '_' ? '[Pièce jointe]' : rawLast;
         final lastAtStr = (m['lastMessageAt'] as String?) ?? '';
         DateTime lastAt;
         try {
@@ -366,21 +375,11 @@ class _ConversationTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
-            // Avatar + statut en ligne
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: const Color(0xFFDDE3F5),
-                  child: Text(conv.initials, style: const TextStyle(fontWeight: FontWeight.w500, color: Color(0xFF3F51B5))),
-                ),
-                if (conv.online)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(width: 10, height: 10, decoration: BoxDecoration(color: const Color(0xFF7AD738), borderRadius: BorderRadius.circular(9999))),
-                  ),
-              ],
+            // Avatar 
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: const Color(0xFFDDE3F5),
+              child: Text(conv.initials, style: const TextStyle(fontWeight: FontWeight.w500, color: Color(0xFF3F51B5))),
             ),
             const SizedBox(width: 12),
             // Colonne: nom + heure, puis dernier message + badge non lu

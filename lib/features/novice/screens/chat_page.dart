@@ -181,13 +181,6 @@ class _NoviceChatPageState extends State<NoviceChatPage> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        online ? 'En ligne' : 'Hors ligne',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF6B4F4A),
-                        ),
-                      ),
                     ],
                   ),
                 ),

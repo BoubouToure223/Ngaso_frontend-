@@ -54,15 +54,18 @@ class AppShell extends StatelessWidget {
                           ? const Color(0xFF99614D)
                           : Colors.black;
 
-                      // Applique toujours la couleur sur l'icône (même si c'est un Stack).
-                      // Cela permet de colorer aussi les icônes Novice (Messages / Demandes).
-                      final Widget coloredIcon = ColorFiltered(
-                        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-                        child: t.iconWidget,
-                      );
+                      // Si l'icône est un Stack (par ex. icône + badge), on évite de passer
+                      // par ColorFiltered pour ne pas recolorier le texte du badge.
+                      // Pour les icônes simples, on applique le filtre de couleur.
+                      final Widget icon = t.iconWidget is Stack
+                          ? t.iconWidget
+                          : ColorFiltered(
+                              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+                              child: t.iconWidget,
+                            );
 
                       return BottomNavigationBarItem(
-                        icon: coloredIcon,
+                        icon: icon,
                         label: t.label,
                       );
                     })
