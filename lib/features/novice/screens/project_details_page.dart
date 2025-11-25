@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/core/data/services/pro_api_service.dart';
+import 'package:myapp/core/data/services/project_api_service.dart';
 
 class NoviceProjectDetailsPage extends StatefulWidget {
   const NoviceProjectDetailsPage({super.key, required this.projectId});
@@ -68,13 +69,55 @@ class _NoviceProjectDetailsPageState extends State<NoviceProjectDetailsPage> {
                   ),
                 ),
               ),
-              const SizedBox(width: 40),
+              IconButton(
+                onPressed: _confirmDelete,
+                icon: const Icon(Icons.delete_outline, color: Color(0xFFB91C1C)),
+              ),
             ],
           ),
         ),
       ),
       body: _buildBody(theme),
     );
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Supprimer le projet ?'),
+          content: const Text('Cette action est définitive. Voulez-vous vraiment supprimer ce projet ?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Annuler'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Supprimer'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _deleteProject();
+    }
+  }
+
+  Future<void> _deleteProject() async {
+    try {
+      await ProjectApiService().deleteMyProject(projectId: widget.projectId);
+      if (!mounted) return;
+      context.pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la suppression: $e')),
+      );
+    }
   }
 
   Widget _buildBody(ThemeData theme) {

@@ -165,14 +165,14 @@ class _ExpertTile extends StatelessWidget {
                       final msg = "Bonjour, je souhaite vous contacter pour l'étape $label de mon projet.";
                       try {
                         final api = ProApiService();
-                        final demandeId = await api.createDemandeForEtape(
+                        await api.createDemandeForEtape(
                           etapeId: etapeId,
                           professionnelId: id,
                           message: msg,
                         );
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Demande envoyée à $display (ID: $demandeId)')),
+                          SnackBar(content: Text('Demande envoyée à $display')),
                         );
                       } catch (e) {
                         if (!context.mounted) return;

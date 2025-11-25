@@ -12,10 +12,21 @@ class NoviceHomePage extends StatefulWidget {
 }
 
 class _NoviceHomePageState extends State<NoviceHomePage> {
+  late Future<DashboardNoviceResponse> _futureDash;
+
+  @override
+  void initState() {
+    super.initState();
+    _reloadDashboard();
+  }
+
+  void _reloadDashboard() {
+    _futureDash = DashboardRepository().getNoviceDashboard();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final futureDash = DashboardRepository().getNoviceDashboard();
     return Container(
       color: const Color(0xFFFCFAF7),
       child: SafeArea(
@@ -40,7 +51,7 @@ class _NoviceHomePageState extends State<NoviceHomePage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: FutureBuilder<DashboardNoviceResponse>(
-                      future: futureDash,
+                      future: _futureDash,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return Text(
@@ -85,7 +96,9 @@ class _NoviceHomePageState extends State<NoviceHomePage> {
                             onPressed: () async {
                               await context.push('/Novice/notifications');
                               if (!mounted) return;
-                              setState(() {});
+                              setState(() {
+                                _reloadDashboard();
+                              });
                             },
                             icon: const Icon(
                               Icons.notifications_none_rounded,
@@ -131,7 +144,7 @@ class _NoviceHomePageState extends State<NoviceHomePage> {
                     ),
                     const SizedBox(height: 12),
                     FutureBuilder<DashboardNoviceResponse>(
-                      future: futureDash,
+                      future: _futureDash,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return Container(
@@ -350,7 +363,9 @@ class _NoviceHomePageState extends State<NoviceHomePage> {
                                           await context.push('/Novice/my-projects');
                                         }
                                         if (!mounted) return;
-                                        setState(() {});
+                                        setState(() {
+                                          _reloadDashboard();
+                                        });
                                       },
                                       child: const Text('Voir les étapes'),
                                     ),
@@ -377,8 +392,12 @@ class _NoviceHomePageState extends State<NoviceHomePage> {
                           child: _QuickCard(
                             icon: Icons.home,
                             title: 'Mes projets',
-                            onTap: () {
-                              context.push('/Novice/my-projects');
+                            onTap: () async {
+                              await context.push('/Novice/my-projects');
+                              if (!mounted) return;
+                              setState(() {
+                                _reloadDashboard();
+                              });
                             },
                           ),
                         ),
@@ -401,7 +420,9 @@ class _NoviceHomePageState extends State<NoviceHomePage> {
                       onTap: () async {
                         await context.push('/Novice/project-create');
                         if (!mounted) return;
-                        setState(() {});
+                        setState(() {
+                          _reloadDashboard();
+                        });
                       },
                     ),
                     const SizedBox(height: 12),
@@ -417,17 +438,21 @@ class _NoviceHomePageState extends State<NoviceHomePage> {
                               // Ouvrir directement les demandes du dernier projet
                               // en passant projectId
                               // ignore: use_build_context_synchronously
-                              context.push('/Novice/service-requests', extra: {'projectId': id});
+                              await context.push('/Novice/service-requests', extra: {'projectId': id});
                             } else {
                               // Aucun dernier projet -> rediriger vers Mes projets
                               // ignore: use_build_context_synchronously
-                              context.push('/Novice/my-projects');
+                              await context.push('/Novice/my-projects');
                             }
                           } catch (_) {
                             // En cas d'erreur, fallback Mes projets
                             // ignore: use_build_context_synchronously
-                            context.push('/Novice/my-projects');
+                            await context.push('/Novice/my-projects');
                           }
+                          if (!mounted) return;
+                          setState(() {
+                            _reloadDashboard();
+                          });
                         }();
                       },
                     ),

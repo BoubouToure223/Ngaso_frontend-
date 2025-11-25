@@ -50,21 +50,28 @@ class _ConnexionPageState extends State<ConnexionPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Icône de connexion centrée.
+                          // Logo et nom de l'application.
                           SizedBox(
                             width: 280,
-                            child: Center(
-                              child: Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  shape: BoxShape.circle,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  height: 80,
+                                  child: Image.asset(
+                                    'assets/images/logo.png',
+                                    fit: BoxFit.contain,
+                                  ),
                                 ),
-                                child: const Center(
-                                  child: Icon(Icons.login, color: Colors.white, size: 24),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Ngaso',
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
-                              ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 16),
