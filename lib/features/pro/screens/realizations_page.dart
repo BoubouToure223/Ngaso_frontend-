@@ -184,8 +184,8 @@ class _ProRealizationsPageState extends State<ProRealizationsPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openAddRealizationSheet(context),
         backgroundColor: const Color(0xFF3F51B5),
-        label: const Text('Ajouter'),
-        icon: const Icon(Icons.add),
+        label: const Text('Ajouter', style: TextStyle(color: Colors.white),),
+        icon: const Icon(Icons.add, color: Color(0xFFFFFFFF),),
       ),
     );
   }
