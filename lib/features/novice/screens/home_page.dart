@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/core/data/repositories/dashboard_repository.dart';
@@ -586,16 +587,55 @@ class _TipCarousel extends StatefulWidget {
 class _TipCarouselState extends State<_TipCarousel> {
   final controller = PageController();
   int index = 0;
+  Timer? _timer;
+  final List<Map<String, String>> _tips = [
+    {
+      'image': 'assets/images/carousel_1.png',
+      'title': 'Permis de construire',
+      'body':
+          'Avant de commencer la construction, assurez-vous d\'avoir tous les permis nécessaires et de bien comprendre les réglementations locales.',
+    },
+    {
+      'image': 'assets/images/Estimation.avif',
+      'title': 'Budget et imprévus',
+      'body':
+          'Ajoutez 10 % de plus à votre budget pour les imprévus. Cela vous permettra d’éviter les blocages en cours de chantier.',
+    },
+    {
+      'image': 'assets/images/doors.jpg',
+      'title': 'Choisir les bons pros',
+      'body':
+          'Comparez plusieurs professionnels, lisez les avis et vérifiez leurs références avant de signer un contrat.',
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 5), (t) {
+      if (!mounted) return;
+      if (!controller.hasClients) return;
+      final pageCount = _tips.length;
+      if (pageCount == 0) return;
+      final nextPage = ((index + 1) % pageCount).toDouble();
+      controller.animateToPage(
+        nextPage.toInt(),
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
 
   @override
   void dispose() {
+    _timer?.cancel();
     controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final pages = List.generate(3, (i) => i);
+    final pages = List.generate(_tips.length, (i) => i);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -606,12 +646,13 @@ class _TipCarouselState extends State<_TipCarousel> {
             onPageChanged: (i) => setState(() => index = i),
             itemCount: pages.length,
             itemBuilder: (context, i) {
+              final tip = _tips[i];
               return Container(
                 margin: const EdgeInsets.only(right: 6),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  image: const DecorationImage(
-                    image: AssetImage('assets/images/carousel_1.png'),
+                  image: DecorationImage(
+                    image: AssetImage(tip['image'] as String),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -642,11 +683,12 @@ class _TipCarouselState extends State<_TipCarousel> {
                           Text(
                             'Conseil du jour',
                             style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(color: Colors.white70),
+                                ?.copyWith(color: Colors.white,
+                                  fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Permis de construire',
+                            tip['title'] as String,
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(
                                   color: Colors.white,
@@ -655,9 +697,10 @@ class _TipCarouselState extends State<_TipCarousel> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Avant de commencer la construction, assurez-vous d\'avoir tous les permis nécessaires et de bien comprendre les réglementations locales.',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: Colors.white),
+                            tip['body'] as String,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Colors.white,
+                                fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),
