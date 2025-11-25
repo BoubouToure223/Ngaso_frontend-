@@ -55,7 +55,11 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
         final propositionId = (m['propositionId'] is num)
             ? (m['propositionId'] as num).toInt()
             : (m['propositionId'] is String ? int.tryParse(m['propositionId']) : null);
-        final last = (m['lastMessage'] as String?) ?? '';
+        final rawLast = (m['lastMessage'] as String?) ?? '';
+        final trimmed = rawLast.trim();
+        // Si le backend renvoie '_' pour une pièce jointe, on affiche un libellé.
+        // Si c'est vraiment vide, on laisse vide pour ne rien afficher.
+        final last = trimmed == '_' ? '[Pièce jointe]' : rawLast;
         final lastAtRaw = m['lastMessageAt'];
         DateTime lastAt;
         try {
@@ -220,6 +224,11 @@ class _NoviceMessagesPageState extends State<NoviceMessagesPage> {
               ? Uri.parse(attachmentUrl).pathSegments.last
               : 'Document');
       content = '[Document] $name';
+    }
+    // Si le backend renvoie '_' comme contenu pour une pièce jointe, afficher un libellé plus explicite.
+    final trimmedContent = content.trim();
+    if (trimmedContent == '_') {
+      content = '[Pièce jointe]';
     }
     final sentAtRaw = m['sentAt'] ?? m['dateEnvoi'];
     DateTime dt;
@@ -461,8 +470,6 @@ class _ConversationTile extends StatelessWidget {
                             style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
                           ),
                         ),
-                      const SizedBox(width: 6),
-                      if (conv.online) const Icon(Icons.circle, size: 10, color: Color(0xFF2DD44D)),
                     ],
                   ),
                 ],
