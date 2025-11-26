@@ -119,7 +119,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           // Affiche le bouton "Suivant" pour les deux premiers écrans.
           if (_index < 2)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -149,6 +149,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       child: const Text('Se connecter'),
                     ),
                   ),
+                  const SizedBox(height: 50),
                 ],
               ),
             )
