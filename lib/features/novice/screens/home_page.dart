@@ -216,8 +216,8 @@ class _NoviceHomePageState extends State<NoviceHomePage> {
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
                                       child: SizedBox(
-                                        width: 56,
-                                        height: 56,
+                                        width: 60,
+                                        height: 60,
                                         child: Image.asset(
                                           'assets/images/mon_projet.png',
                                           fit: BoxFit.cover,
