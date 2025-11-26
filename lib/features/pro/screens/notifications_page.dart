@@ -82,149 +82,60 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final unread = _items.where((e) => !e.faded).toList(growable: false);
-    final old = _items.where((e) => e.faded).toList(growable: false);
-    List<_NotifItem> filtered(List<_NotifItem> src) =>
-        _filter == null ? src : src.where((e) => e.category == _filter).toList(growable: false);
-
     return Scaffold(
-      appBar: AppBar(
-        // Bouton retour vers l'accueil Pro
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/pro/home'),
-        ),
-        centerTitle: false,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Notifications'),
-            const SizedBox(width: 8),
-            Container(
-              width: 20,
-              height: 20,
-              decoration: const BoxDecoration(color: Color(0xFF2563EB), shape: BoxShape.circle),
-              alignment: Alignment.center,
-              child: Text('$_unreadCount', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 10)),
-            ),
-          ],
-        ),
-        // actions removed per request
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Container(
-            height: 60,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
-            ),
-            alignment: Alignment.centerLeft,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  // Segment: Tous
-                  _SegmentChip(
-                    label: 'Tous',
-                    selected: _filter == null,
-                    onTap: () => setState(() => _filter = null),
+      backgroundColor: const Color(0xFFFCFAF7),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: () => context.go('/pro/home'),
+                  icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1C120D)),
+                ),
+                Expanded(
+                  child: Text(
+                    'Notifications',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: const Color(0xFF1C120D),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  // Segment: Demandes
-                  _SegmentChip(
-                    label: 'Demandes',
-                    selected: _filter == _NotifCategory.demandes,
-                    onTap: () => setState(() => _filter = _NotifCategory.demandes),
-                  ),
-                  const SizedBox(width: 8),
-                  // Segment: Propositions
-                  _SegmentChip(
-                    label: 'Propositions',
-                    selected: _filter == _NotifCategory.propositions,
-                    onTap: () => setState(() => _filter = _NotifCategory.propositions),
-                  ),
-                  const SizedBox(width: 8),
-                  // Segment: Messages
-                  _SegmentChip(
-                    label: 'Messages',
-                    selected: _filter == _NotifCategory.messages,
-                    onTap: () => setState(() => _filter = _NotifCategory.messages),
-                  ),
-                
-                ],
-              ),
+                ),
+                const SizedBox(width: 40),
+              ],
             ),
           ),
         ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
+          : (_error != null
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_error!, style: const TextStyle(color: Colors.red)),
+                      Text(_error!, style: theme.textTheme.bodyMedium),
                       const SizedBox(height: 8),
                       ElevatedButton(onPressed: _fetchNotifications, child: const Text('Réessayer')),
                     ],
                   ),
                 )
-              : RefreshIndicator(
-        onRefresh: _onRefresh,
-        child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Nouvelles', style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF374151), fontWeight: FontWeight.w600)),
-              TextButton(
-                onPressed: _unreadCount == 0 || _loading ? null : _markAllRead,
-                child: const Text('Tout marquer comme lu'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Liste des notifications non lues
-          ...filtered(unread).map((n) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _NotifCard(
-                  borderColor: n.borderColor,
-                  title1: n.title1,
-                  title2: n.title2,
-                  title3: n.title3,
-                  timeText: n.timeText,
-                  actionText: n.actionText,
-                  actionColor: n.actionColor,
-                  faded: n.faded,
-                  actionEnabled: !_isProposalRejected(n),
-                  onTap: () => _handleNotificationTap(n),
-                ),
-              )),
-          const SizedBox(height: 24),
-          Text('Anciennes notifications', style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF374151), fontWeight: FontWeight.w600)),
-          const SizedBox(height: 12),
-          // Liste des notifications anciennes
-          ...filtered(old).map((n) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _NotifCard(
-                  borderColor: n.borderColor,
-                  title1: n.title1,
-                  title2: n.title2,
-                  title3: n.title3,
-                  timeText: n.timeText,
-                  actionText: n.actionText,
-                  actionColor: n.actionColor,
-                  faded: true,
-                  actionEnabled: !_isProposalRejected(n),
-                  onTap: () => _handleNotificationTap(n),
-                ),
-              )),
-        ],
-      ),
-      ),
+              : (_items.isEmpty
+                  ? const Center(child: Text('Aucune notification'))
+                  : RefreshIndicator(
+                      onRefresh: _onRefresh,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: _items.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, i) => _NotifTilePro(data: _items[i], onTap: () => _handleNotificationTap(_items[i])),
+                      ),
+                    ))),
     );
   }
 
@@ -390,6 +301,62 @@ class _SegmentChip extends StatelessWidget {
           label,
           style: TextStyle(color: fg, fontWeight: FontWeight.w500),
         ),
+      ),
+    );
+  }
+}
+
+class _NotifTilePro extends StatelessWidget {
+  final _NotifItem data;
+  final VoidCallback onTap;
+  const _NotifTilePro({required this.data, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5EFEC),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1C120D)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data.title1,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: const Color(0xFF1C120D),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                if (data.actionText.isNotEmpty)
+                  Text(
+                    data.actionText,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF6B4F4A),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            data.timeText,
+            style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF6B4F4A)),
+          ),
+        ],
       ),
     );
   }

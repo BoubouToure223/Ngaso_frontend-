@@ -160,7 +160,7 @@ class _ProHomePageState extends State<ProHomePage> {
                   FutureBuilder<ProDashboard>(
                     future: _future,
                     builder: (context, snap) {
-                      final title = snap.hasData ? 'Bienvenue ${snap.data!.prenom} 👋' : 'Bienvenue 👋';
+                      final title = snap.hasData ? 'Bienvenue ${snap.data!.prenom} ' : 'Bienvenue ';
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -268,34 +268,12 @@ class _ProHomePageState extends State<ProHomePage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(8),
-                                  onTap: () => context.go('/pro/messages'),
-                                  child: _StatCard(
-                                    emoji: '💬',
-                                    title: 'Messages',
-                                    value: data != null ? data.messagesNonLus.toString() : '-',
-                                    subtitle: data != null ? '${data.messagesNonLus} non lus' : '',
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Expanded(child: SizedBox()),
-                          ],
-                        ),
                         const SizedBox(height: 20),
                         Row(
                           children: [
                             Expanded(
                               child: Text(
-                                'Projets disponibles 🔥',
+                                'Projets disponibles ',
                                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
                               ),
                             ),
