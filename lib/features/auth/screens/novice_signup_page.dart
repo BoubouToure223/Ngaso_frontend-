@@ -39,10 +39,11 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset + 16),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 390),
@@ -238,9 +239,11 @@ class _NoviceSignupPageState extends State<NoviceSignupPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        // Lien vers la page de connexion.
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        // Lien vers la page de connexion (wrap pour éviter l'overflow horizontal).
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 4,
                           children: [
                             Text(
                               'Vous avez déjà un compte ?',

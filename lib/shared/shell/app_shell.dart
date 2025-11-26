@@ -37,9 +37,9 @@ class AppShell extends StatelessWidget {
                 currentIndex: current,
                 type: BottomNavigationBarType.fixed,
                 backgroundColor: const Color(0xFFFCFAF7),
-                // Couleurs mises à jour : onglet actif marron 0xFF99614D, inactifs noirs
-                selectedItemColor: const Color(0xFF99614D),
-                unselectedItemColor: Colors.black,
+                // Couleurs : onglet actif noir, inactifs marron 0xFF99614D
+                selectedItemColor: Colors.black,
+                unselectedItemColor: const Color(0xFF99614D),
                 showUnselectedLabels: true,
                 onTap: (i) => context.go(tabs[i].path),
                 items: tabs
@@ -49,23 +49,20 @@ class AppShell extends StatelessWidget {
                       final int index = entry.key;
                       final NavTab t = entry.value;
                       final bool isSelected = index == current;
-                      // Même logique de couleur pour les icônes : actif 0xFF99614D, inactif noir
+                      // Même logique de couleur pour les icônes : actif noir, inactif marron 0xFF99614D
                       final Color color = isSelected
-                          ? const Color(0xFF99614D)
-                          : Colors.black;
+                          ? Colors.black
+                          : const Color(0xFF99614D);
 
-                      // Si l'icône est un Stack (par ex. icône + badge), on évite de passer
-                      // par ColorFiltered pour ne pas recolorier le texte du badge.
-                      // Pour les icônes simples, on applique le filtre de couleur.
-                      final Widget icon = t.iconWidget is Stack
-                          ? t.iconWidget
-                          : ColorFiltered(
-                              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-                              child: t.iconWidget,
-                            );
+                      // On applique toujours ColorFiltered pour que toutes les icônes
+                      // suivent la couleur active/inactive définie ci-dessus.
+                      final Widget coloredIcon = ColorFiltered(
+                        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+                        child: t.iconWidget,
+                      );
 
                       return BottomNavigationBarItem(
-                        icon: icon,
+                        icon: coloredIcon,
                         label: t.label,
                       );
                     })

@@ -8,7 +8,7 @@ class ApiConfig {
     return 'http://localhost:8080/api/v1';
   }
 
-  // static String get baseUrl => 'http://172.21.139.195:8080/api/v1';
+  // static String get baseUrl => 'http://172.21.139.195/api/v1';
   static String get baseOrigin {
     final uri = Uri.parse(baseUrl);
     final port = (uri.hasPort && uri.port != 0) ? ':${uri.port}' : '';
