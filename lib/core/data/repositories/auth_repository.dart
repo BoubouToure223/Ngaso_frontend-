@@ -10,12 +10,13 @@ class AuthRepository {
     try {
       final data = await _api.login(email: email, password: password);
       final token = data['token'] as String?;
+      final refreshToken = data['refreshToken'] as String?;
       final role = data['role'] as String?;
       final userId = data['userId'];
       if (token == null || token.isEmpty) {
         throw Exception('Token manquant');
       }
-      await TokenStorage.instance.saveToken(token);
+      await TokenStorage.instance.saveTokens(accessToken: token, refreshToken: refreshToken);
       return AuthResult(token: token, role: role, userId: userId);
     } on DioException catch (e) {
       // 1) Erreurs réseau franches → message réseau
@@ -54,10 +55,11 @@ class AuthRepository {
     try {
       final data = await _api.registerNovice(body);
       final token = data['token'] as String?;
+      final refreshToken = data['refreshToken'] as String?;
       final role = data['role'] as String?;
       final userId = data['userId'];
       if (token != null && token.isNotEmpty) {
-        await TokenStorage.instance.saveToken(token);
+        await TokenStorage.instance.saveTokens(accessToken: token, refreshToken: refreshToken);
         return AuthResult(token: token, role: role, userId: userId);
       }
       // Pas de token: considérer l'inscription comme réussie sans connexion automatique
@@ -79,10 +81,11 @@ class AuthRepository {
       final body = res.data;
       if (body is Map) {
         final token = body['token'] as String?;
+        final refreshToken = body['refreshToken'] as String?;
         final role = body['role'] as String?;
         final userId = body['userId'];
         if (token != null && token.isNotEmpty) {
-          await TokenStorage.instance.saveToken(token);
+          await TokenStorage.instance.saveTokens(accessToken: token, refreshToken: refreshToken);
           return AuthResult(token: token, role: role, userId: userId);
         }
         // Pas de token: retour sans connexion automatique
