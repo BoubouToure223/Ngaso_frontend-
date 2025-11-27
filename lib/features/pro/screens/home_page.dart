@@ -102,15 +102,15 @@ class _ProHomePageState extends State<ProHomePage> {
                     children: [
                       // Placeholder du logo de l'app
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: 60,
+                        height: 60,
                         decoration: BoxDecoration(
                           color: primary.withOpacity(0.15),
                           shape: BoxShape.circle,
                         ),
                         child: ClipOval(
                           child: Image.asset(
-                            'assets/images/Mini logo.png',
+                            'assets/images/logo.png',
                             fit: BoxFit.cover,
                           ),
                         ),

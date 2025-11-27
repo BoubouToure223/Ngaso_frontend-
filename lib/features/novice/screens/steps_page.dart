@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/core/data/services/project_api_service.dart';
+import 'package:myapp/core/network/api_config.dart';
 
 class NoviceStepsPage extends StatefulWidget {
   const NoviceStepsPage({super.key, required this.projectId});
@@ -30,12 +31,13 @@ class _NoviceStepsPageState extends State<NoviceStepsPage> {
       final api = ProjectApiService();
       final pid = widget.projectId;
       final list = await api.getProjectSteps(projectId: pid);
-      // Normalize and sort by ordre
+      // Normalize and sort by ordre (on transporte aussi l'URL d'image de profil si présente)
       final normalized = list.map<Map<String, dynamic>>((e) => {
             'ordre': _asInt(e['ordre']),
             'estValider': _asBool(e['estValider']),
             'modeleNom': (e['modeleNom'] ?? '').toString(),
             'etapeId': _asInt(e['etapeId']),
+            'imageProfilUrl': (e['imageProfilUrl'] ?? '').toString(),
           }).toList(growable: false)
         ..sort((a, b) => (a['ordre'] as int).compareTo(b['ordre'] as int));
 
@@ -47,6 +49,20 @@ class _NoviceStepsPageState extends State<NoviceStepsPage> {
         final estValider = e['estValider'] as bool;
         final nom = e['modeleNom'] as String;
         final etapeId = e['etapeId'] as int;
+        // On convertit en String de manière défensive pour éviter les erreurs de cast
+        final rawImageProfil = (e['imageProfilUrl'] ?? '').toString();
+        String? fullImageUrl;
+        if (rawImageProfil.isNotEmpty) {
+          // Si le backend renvoie une URL absolue, on l'utilise telle quelle,
+          // sinon on la préfixe avec l'URL de base de l'API (qui inclut déjà /api/v1).
+          if (rawImageProfil.startsWith('http://') || rawImageProfil.startsWith('https://')) {
+            fullImageUrl = rawImageProfil;
+          } else {
+            // Exemple: baseUrl = http://<ip>:8080/api/v1 et imageProfilUrl = /uploads/...
+            // Résultat: http://<ip>:8080/api/v1/uploads/...
+            fullImageUrl = ApiConfig.baseUrl + rawImageProfil;
+          }
+        }
         String subtitle;
         if (estValider) {
           subtitle = 'Terminé';
@@ -59,7 +75,7 @@ class _NoviceStepsPageState extends State<NoviceStepsPage> {
           title: nom.isNotEmpty ? nom : 'Étape ${ordre > 0 ? ordre : ''}'.trim(),
           subtitle: subtitle,
           ordre: ordre,
-          imageAsset: _imageForOrdre(ordre),
+          imageUrl: fullImageUrl,
           etapeId: etapeId,
         );
       }).toList(growable: false);
@@ -89,25 +105,6 @@ class _NoviceStepsPageState extends State<NoviceStepsPage> {
     if (v is String) return v.toLowerCase() == 'true' || v == '1';
     if (v is num) return v != 0;
     return false;
-  }
-
-  String _imageForOrdre(int ordre) {
-    switch (ordre) {
-      case 1:
-        return 'assets/images/etape1_img.png';
-      case 2:
-        return 'assets/images/etape2_img.png';
-      case 3:
-        return 'assets/images/etape3_img.png';
-      case 4:
-        return 'assets/images/etape4_img.png';
-      case 5:
-        return 'assets/images/etape5_img.png';
-      case 6:
-        return 'assets/images/etape6_img.png';
-      default:
-        return 'assets/images/etape1_img.png';
-    }
   }
 
   @override
@@ -237,7 +234,21 @@ class _StepCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             child: AspectRatio(
               aspectRatio: 16 / 9,
-              child: Image.asset(data.imageAsset, fit: BoxFit.cover),
+              child: data.imageUrl != null && data.imageUrl!.isNotEmpty
+                  ? Image.network(
+                      data.imageUrl!,
+                      fit: BoxFit.cover,
+                    )
+                  : const ColoredBox(
+                      color: Color(0xFFE8E4E1),
+                      child: Center(
+                        child: Icon(
+                          Icons.image_not_supported,
+                          color: Color(0xFF6B4F4A),
+                          size: 32,
+                        ),
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 8),
@@ -292,8 +303,8 @@ class _StepCard extends StatelessWidget {
 class _Step {
   final String title;
   final String subtitle;
-  final String imageAsset;
+  final String? imageUrl;
   final int ordre;
   final int etapeId;
-  const _Step({required this.title, required this.subtitle, required this.imageAsset, required this.ordre, required this.etapeId});
+  const _Step({required this.title, required this.subtitle, this.imageUrl, required this.ordre, required this.etapeId});
 }

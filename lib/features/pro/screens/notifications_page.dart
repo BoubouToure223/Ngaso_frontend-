@@ -75,8 +75,8 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
   void initState() {
     super.initState();
     _items = const [];
-    _fetchNotifications();
-    _fetchUnreadCount();
+    // Charge les notifications puis les marque comme lues dès l'entrée sur la page.
+    _fetchNotifications().then((_) => _markAllRead());
   }
 
   @override
@@ -254,22 +254,16 @@ class _ProNotificationsPageState extends State<ProNotificationsPage> {
   }
 
   Future<void> _markAllRead() async {
-    setState(() {
-      _loading = true;
-    });
     try {
       await _api.markAllNotificationsRead();
-      // Optimistic UI update
+      if (!mounted) return;
+      // Mise à jour locale : toutes les notifications deviennent "lues".
       setState(() {
         _items = _items.map((e) => e.markRead()).toList(growable: false);
         _unreadCount = 0;
-        _loading = false;
       });
-    } catch (e) {
-      setState(() {
-        _loading = false;
-        _error = 'Échec du marquage comme lu';
-      });
+    } catch (_) {
+      // On ignore l'erreur ici pour ne pas casser l'affichage de la page.
     }
   }
 }
